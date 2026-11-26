@@ -150,7 +150,7 @@ jobs:
           OUT: ${{ steps.build.outputs.output-directory }}
         run: |
           set -euo pipefail
-          iso=$(find "$OUT" -name '*.iso' | head -1)
+          iso=$(realpath "$(find "$OUT" -name "*.iso" | head -1)")
           [[ -n "$iso" ]] || { echo "no ISO found in $OUT"; exit 1; }
           mkdir -p /tmp/release && cd /tmp/release
           mv "$iso" MagicOS.iso
