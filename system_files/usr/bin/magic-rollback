@@ -1,8 +1,19 @@
 #!/usr/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 # "Go back to the previous version." The only update control Magic exposes.
-# Takes effect on the next restart; the user's files and settings are untouched.
+#   magic-rollback          go back one version (works offline). Takes effect on
+#                           the next restart. Files and settings are untouched.
+#   magic-rollback --list   show the versions still kept online (newest last)
 set -euo pipefail
+
+REPO="ghcr.io/alex-ha-192/magic-os"
+
+if [[ "${1:-}" == "--list" ]]; then
+    skopeo list-tags "docker://${REPO}" | jq -r '.Tags[]' \
+        | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}(-[0-9]+)?$' | sort -V
+    exit 0
+fi
+
 if [[ $EUID -ne 0 ]]; then
     exec pkexec "$0" "$@"
 fi

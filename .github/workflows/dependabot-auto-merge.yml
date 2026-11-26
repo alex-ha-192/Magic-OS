@@ -1,0 +1,27 @@
+name: Merge Dependabot updates
+
+# Dependabot opens a pull request (Aurora submodule, GitHub Actions versions).
+# The normal "Build container image" workflow checks it. When that passes, this
+# merges it. Nobody has to click anything. If the checks fail, the PR just waits.
+on:
+  workflow_run:
+    workflows: ["Build container image"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: Merge when checks pass
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-26.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: gh pr merge "$BRANCH" --repo "$GITHUB_REPOSITORY" --squash --delete-branch

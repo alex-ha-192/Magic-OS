@@ -8,9 +8,11 @@
 | Updates | `rpm-ostreed-automatic` with `AutomaticUpdatePolicy=stage`, daily | Downloads and stages silently. No automatic reboot. |
 | Restart gating | Comes with ostree: a staged update is applied on any reboot or shutdown | "Update and restart" and "update and shut down" are the only paths, as designed. The tray indicator reads `magic-update-status`. |
 | Rollback | `magic-rollback` (`rpm-ostree rollback`) | The only update control shown to the user. |
-| Build cadence | Release every Saturday 12:00 UK time if all checks pass; manual early release available | Calm, predictable, and nothing broken ships. |
+| Build cadence | Catch-up check every 3h; releases once per week after Saturday 12:00 UK time, only if all checks pass | A late or dropped GitHub run cannot skip a week; nothing broken ships. |
+| Snapshots | Newest + 3 previous images kept in GHCR; older deleted | Rollback depth without unbounded storage. |
+| Dependabot | Auto-merged when its PR checks pass | Hands-off. |
 | Upstream Aurora | Git submodule (`upstream/aurora`), bumped weekly by Dependabot | Upstream fixes arrive as reviewed bumps instead of manual copies. |
-| Version | Build date, `YYYY-MM-DD` | Requested. Two builds on one day share a version. |
+| Version | Build date `YYYY-MM-DD`, `-2`, `-3` for extra same-day releases | Requested. Tag and GitHub Release per version. |
 | Apps | Flathub only; Vivaldi default, Firefox alternative | Flatpaks update on their own timer, away from the OS image. |
 | Look | `org.magicos.ember` look-and-feel, `MagicEmber` colours, Open Sans | Matches the mockups. |
 | Filesystem | btrfs | Cheap snapshots for "see earlier versions" later. |
@@ -26,7 +28,11 @@
 7. Windows disk in Files: read-only by default, safe with Fast Startup/hibernation, BitLocker detection.
 8. `bootc-image-builder` was merged into `image-builder` (June 2026); the workflows still use the old action.
 9. Whether a failed first CI run is only the `ARG` bug (fixed) or hides more.
-10. Pinning the base image by digest (Renovate) so upstream changes never arrive unreviewed.
+10. After `rpm-ostree rollback`, the daily update timer would stage the same newer version again. Rollback needs to remember "skip this version, wait for the next".
+11. Only the immediate previous version is kept on the device; older ones are in the registry and `magic-rollback --list` shows them, but going back to one needs a switch command that is not written yet.
+12. The repository is **private**, so nobody else can pull the image. It must be public to distribute.
+13. Signing is off until a key secret exists, so the on-device signature policy is not set up yet.
+14. Pinning the base image by digest (Renovate) so upstream changes never arrive unreviewed.
 
 ## Next
 

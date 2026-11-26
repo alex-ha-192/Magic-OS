@@ -100,7 +100,7 @@ build $target_image=image_name $tag=default_tag:
 
     BUILD_ARGS=()
     # Magic's version is the release date: YYYY-MM-DD.
-    BUILD_ARGS+=("--build-arg" "MAGIC_VERSION=$(date -u +%Y-%m-%d)")
+    BUILD_ARGS+=("--build-arg" "MAGIC_VERSION=${MAGIC_VERSION:-$(date -u +%Y-%m-%d)}")
     LABELS=()
     if [[ -z "$(git status -s)" ]]; then
         GIT_SHA=$(git rev-parse --short HEAD)
@@ -108,7 +108,7 @@ build $target_image=image_name $tag=default_tag:
         LABELS+=("--label" "org.opencontainers.image.documentation=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
         LABELS+=("--label" "org.opencontainers.image.source=https://github.com/{{ repo_organization }}/{{ image_name }}/blob/${GIT_SHA}/Containerfile")
         LABELS+=("--label" "org.opencontainers.image.url=https://github.com/{{ repo_organization }}/{{ image_name }}/tree/${GIT_SHA}")
-        LABELS+=("--label" "org.opencontainers.image.version=$(date -u +%Y-%m-%d)")
+        LABELS+=("--label" "org.opencontainers.image.version=${MAGIC_VERSION:-$(date -u +%Y-%m-%d)}")
     fi
 
     # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
@@ -202,7 +202,7 @@ generate-build-tags $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
 
-    DATE=$(date -u +%Y-%m-%d)
+    DATE="${MAGIC_VERSION:-$(date -u +%Y-%m-%d)}"
     BUILD_TAGS=()
     if [[ -z "$(git status -s)" ]]; then
         GIT_SHA=$(git rev-parse --short HEAD)

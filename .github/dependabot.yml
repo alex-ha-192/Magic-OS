@@ -10,8 +10,9 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Pinned upstream Aurora (git submodule). Opened on Fridays so the PR can be
-  # reviewed before Saturday's release.
+  # Pinned upstream Aurora (git submodule). Merged automatically once its
+  # checks pass (see dependabot-auto-merge.yml). Fridays, so it is in before
+  # Saturday's release.
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:

@@ -28,25 +28,27 @@ Early. The image definition, update policy and Plasma defaults are written but *
 
 The release version is set at build time from the date (`MAGIC_VERSION`).
 
-## Releases
+## Releases (fully automatic)
 
-A release goes out automatically every **Saturday at 12:00 UK time**, but only if every check passes: file checks, the image build, `bootc container lint`, and a smoke test that starts the built image. If anything fails, nothing is published and everyone stays on the previous version.
+Nobody has to do anything weekly.
 
-- Pushes and pull requests build and test but never publish.
-- To release early: Actions, "Build container image", Run workflow, tick "publish".
-- GitHub can start scheduled runs late. The gate only publishes when the run starts during the 12:00 hour in London, so a run delayed past 13:00 skips that week. Run it by hand if that happens.
+- **Schedule:** a check runs every 3 hours. It releases if this week's release (Saturday 12:00 UK time) has not gone out yet. If GitHub is late, or skips a run, the next check does it. Once the week's release exists, the checks do nothing.
+- **Only if it works:** file checks, the image build, `bootc container lint` and a smoke test must all pass. If one fails, nothing is published, everyone stays on the previous version, and the next 3-hourly check tries again.
+- **Versions:** the release date, `2026-11-28`. A second release the same day is `2026-11-28-2`, then `-3`. Each release is a git tag and a GitHub Release.
+- **Snapshots kept:** the newest release image and the three before it stay in the registry. Older ones are deleted automatically. `magic-rollback --list` shows what is kept.
+- **Dependabot:** it bumps the Aurora submodule and workflow actions on Fridays. Each PR is built and tested, and merged automatically if it passes.
+- **Pushes and pull requests** build and test but never publish. To release early: Actions, "Build container image", Run workflow, tick "publish".
+- **Clone** with `git clone --recurse-submodules` (or `git submodule update --init`).
 
-Aurora is a git submodule. Dependabot opens a bump PR on Fridays; merge it (once its checks are green) and it ships on Saturday. Clone with `git clone --recurse-submodules`, or run `git submodule update --init`.
+## Signing (optional until you add a key)
 
-## One-time setup for signing
+Releases work without a key; they are just unsigned. Add one and every release after it is signed automatically:
 
 ```
-cosign generate-key-pair
+cosign generate-key-pair          # leave the password empty
 ```
 
-1. Keep `cosign.key` private. It is git-ignored. Never commit it.
-2. Commit `cosign.pub`.
-3. In GitHub: Settings, Secrets and variables, Actions, new secret `SIGNING_SECRET`, paste the contents of `cosign.key`.
+Commit `cosign.pub`, and save the contents of `cosign.key` as the repository secret `SIGNING_SECRET` (Settings, Secrets and variables, Actions). Keep `cosign.key` private. It is git-ignored.
 
 ## Try it
 
