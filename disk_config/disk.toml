@@ -1,3 +1,10 @@
+# TEST IMAGE ONLY (qcow2 for trying Magic in a VM). The real installer asks for
+# a name and password. This login exists only in disk images built by hand.
+[[customizations.user]]
+name = "magic"
+password = "magic"
+groups = ["wheel"]
+
 [[customizations.filesystem]]
 mountpoint = "/"
 minsize = "20 GiB"
