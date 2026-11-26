@@ -1,0 +1,4 @@
+[submodule "upstream/aurora"]
+	path = upstream/aurora
+	url = https://github.com/ublue-os/aurora
+	shallow = true

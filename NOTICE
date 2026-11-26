@@ -2,5 +2,5 @@ Magic OS is licensed GPL-3.0-or-later (see LICENSE-GPL-3.0).
 
 Portions are adapted from these Apache-2.0 projects (see LICENSE-APACHE-2.0):
   - ublue-os/image-template  (Containerfile, Justfile, GitHub workflows, disk_config)
-  - ublue-os/aurora          (os-release and initramfs steps, flatpak-nuke-fedora.service,
-                              Plymouth kargs, rpm-ostreed "stage" policy, bootc install settings)
+  - ublue-os/aurora          (git submodule at upstream/aurora: initramfs script, flatpak-nuke-fedora.service,
+                              Plymouth kargs; adapted: os-release step, "stage" policy, bootc install settings)

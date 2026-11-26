@@ -8,7 +8,8 @@
 | Updates | `rpm-ostreed-automatic` with `AutomaticUpdatePolicy=stage`, daily | Downloads and stages silently. No automatic reboot. |
 | Restart gating | Comes with ostree: a staged update is applied on any reboot or shutdown | "Update and restart" and "update and shut down" are the only paths, as designed. The tray indicator reads `magic-update-status`. |
 | Rollback | `magic-rollback` (`rpm-ostree rollback`) | The only update control shown to the user. |
-| Build cadence | Weekly, plus manual runs | Calm and testable. |
+| Build cadence | Release every Saturday 12:00 UK time if all checks pass; manual early release available | Calm, predictable, and nothing broken ships. |
+| Upstream Aurora | Git submodule (`upstream/aurora`), bumped weekly by Dependabot | Upstream fixes arrive as reviewed bumps instead of manual copies. |
 | Version | Build date, `YYYY-MM-DD` | Requested. Two builds on one day share a version. |
 | Apps | Flathub only; Vivaldi default, Firefox alternative | Flatpaks update on their own timer, away from the OS image. |
 | Look | `org.magicos.ember` look-and-feel, `MagicEmber` colours, Open Sans | Matches the mockups. |
@@ -24,7 +25,8 @@
 6. Installer. The template's Anaconda ISO is only a stopgap. We need a friendly front end for: language, name, time zone, sign-in password, encryption + recovery key, next-to-Windows or whole disk, and software choice.
 7. Windows disk in Files: read-only by default, safe with Fast Startup/hibernation, BitLocker detection.
 8. `bootc-image-builder` was merged into `image-builder` (June 2026); the workflows still use the old action.
-9. Pinning the base image by digest (Renovate) so upstream changes never arrive unreviewed.
+9. Whether a failed first CI run is only the `ARG` bug (fixed) or hides more.
+10. Pinning the base image by digest (Renovate) so upstream changes never arrive unreviewed.
 
 ## Next
 

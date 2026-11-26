@@ -21,11 +21,22 @@ Early. The image definition, update policy and Plasma defaults are written but *
 | `Containerfile` | Starts from `ghcr.io/ublue-os/kinoite-main:44`, runs `build_files/build.sh` |
 | `build_files/steps/` | Numbered steps: copy files, packages, identity, services, initramfs, cleanup |
 | `system_files/` | Copied onto `/`: update policy, presets, Plasma look-and-feel, colour scheme, app list |
-| `.github/workflows/build.yml` | Weekly build, push to GHCR, sign with cosign |
+| `upstream/aurora` | Git submodule: pinned Aurora, source of a few reused files and scripts |
+| `.github/workflows/build.yml` | Checks, build, smoke test; releases **Saturdays 12:00 UK time**, signed with cosign |
 | `.github/workflows/build-disk.yml` | Builds a test disk image and an installer ISO |
 | `Justfile` | Local builds: `just build`, `just build-iso` |
 
 The release version is set at build time from the date (`MAGIC_VERSION`).
+
+## Releases
+
+A release goes out automatically every **Saturday at 12:00 UK time**, but only if every check passes: file checks, the image build, `bootc container lint`, and a smoke test that starts the built image. If anything fails, nothing is published and everyone stays on the previous version.
+
+- Pushes and pull requests build and test but never publish.
+- To release early: Actions, "Build container image", Run workflow, tick "publish".
+- GitHub can start scheduled runs late. The gate only publishes when the run starts during the 12:00 hour in London, so a run delayed past 13:00 skips that week. Run it by hand if that happens.
+
+Aurora is a git submodule. Dependabot opens a bump PR on Fridays; merge it (once its checks are green) and it ships on Saturday. Clone with `git clone --recurse-submodules`, or run `git submodule update --init`.
 
 ## One-time setup for signing
 
@@ -40,6 +51,7 @@ cosign generate-key-pair
 ## Try it
 
 ```
+git submodule update --init
 just build         # build the image locally with podman
 just build-iso     # installer ISO (uses disk_config/iso.toml)
 ```

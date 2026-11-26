@@ -9,3 +9,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Pinned upstream Aurora (git submodule). Opened on Fridays so the PR can be
+  # reviewed before Saturday's release.
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
