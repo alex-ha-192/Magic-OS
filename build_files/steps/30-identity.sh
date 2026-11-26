@@ -17,8 +17,8 @@ sed -i "/^SUPPORT_URL=/d; /^DOCUMENTATION_URL=/d" /usr/lib/os-release
 sed -i "/^REDHAT_/d" /usr/lib/os-release
 sed -i "s|^OSTREE_VERSION=.*|OSTREE_VERSION='${VERSION_STR}'|" /usr/lib/os-release || true
 
-mkdir -p /usr/share/magic
-cat > /usr/share/magic/image-info.json <<EOF
+mkdir -p /usr/share/magic-os
+cat > /usr/share/magic-os/image-info.json <<EOF
 {
   "image-name": "magic-os",
   "version": "${VERSION_STR}",

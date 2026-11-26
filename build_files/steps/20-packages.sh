@@ -7,7 +7,6 @@ ADD=(
     open-sans-fonts        # the Magic look uses Open Sans
     ntfs-3g
     jq
-    fuse-exfat
     exfatprogs
     tpm2-tools             # TPM2 unlock tooling for full-disk encryption
 )
