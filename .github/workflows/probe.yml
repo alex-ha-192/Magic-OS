@@ -1,0 +1,23 @@
+name: Probe release permission
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-26.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          echo "--- create release"
+          gh api -i -X POST "repos/${GITHUB_REPOSITORY}/releases" -f tag_name=probe-${GITHUB_RUN_ID} -f target_commitish="${GITHUB_SHA}" -f name=probe 2>&1 | head -30
+          echo "--- create tag ref"
+          gh api -i -X POST "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/probe2-${GITHUB_RUN_ID}" -f sha="${GITHUB_SHA}" 2>&1 | head -20
+          echo "--- list releases"
+          gh api -i "repos/${GITHUB_REPOSITORY}/releases" 2>&1 | head -8
+          echo "--- cleanup"
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/probe2-${GITHUB_RUN_ID}" 2>&1 | head -3
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq ".[]|select(.tag_name==\"probe-${GITHUB_RUN_ID}\")|.id")
+          [[ -n "$id" ]] && gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/$id" && gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/probe-${GITHUB_RUN_ID}"
