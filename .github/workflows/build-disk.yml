@@ -2,8 +2,23 @@
 name: Build disk images
 
 on:
+  # Called by build.yml after every release: builds the installer ISO and attaches
+  # it to the release as MagicOS.iso.
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        default: amd64
+      release_tag:
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
+      release_tag:
+        description: "Attach the ISO to this release (e.g. 2026-11-26). Leave empty for a plain test build."
+        required: false
+        default: ""
+        type: string
       upload-to-s3:
         description: "Upload to S3"
         required: false
@@ -26,23 +41,25 @@ on:
 env:
   IMAGE_NAME: ${{ github.event.repository.name }} # output of build.yml, keep in sync
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
-  DEFAULT_TAG: "latest"
+  DEFAULT_TAG: ${{ inputs.release_tag || 'latest' }}
   BIB_IMAGE: "quay.io/centos-bootc/bootc-image-builder:latest"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
+  # Must differ from the calling workflow's group, or the two would block each other.
+  group: disk-${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 jobs:
   build:
     name: Build disk images
-    runs-on: ${{ inputs.platform == 'amd64' && 'ubuntu-26.04' || 'ubuntu-26.04-arm' }}
+    runs-on: ${{ (inputs.platform || 'amd64') == 'amd64' && 'ubuntu-26.04' || 'ubuntu-26.04-arm' }}
     strategy:
       fail-fast: false
       matrix:
-        disk-type: ["qcow2", "anaconda-iso"]
+        # Releases get only the installer ISO. Hand-run builds also make a VM disk.
+        disk-type: ${{ fromJSON(inputs.release_tag != '' && '["anaconda-iso"]' || '["qcow2","anaconda-iso"]') }}
     permissions:
-      contents: read
+      contents: write
       packages: read
       id-token: write
 
@@ -77,6 +94,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # The image is private while the repository is. The builder pulls it as root.
+      - name: Log in to GitHub Container Registry
+        env:
+          TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | sudo podman login ghcr.io -u "$ACTOR" --password-stdin
+
       - name: Build disk images
         id: build
         uses: osbuild/bootc-image-builder-action@8661cd3832544ad68c12dcde8681b13ab0f56a8d # main
@@ -89,7 +113,7 @@ jobs:
           additional-args: --use-librepo=True
 
       - name: Upload disk images and Checksum to Job Artifacts
-        if: inputs.upload-to-s3 != true && github.event_name != 'pull_request'
+        if: inputs.upload-to-s3 != true && github.event_name != 'pull_request' && inputs.release_tag == ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ steps.build.outputs.output-directory }}
@@ -113,3 +137,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rclone
           rclone copy $SOURCE_DIR S3:${{ secrets.S3_BUCKET_NAME }}
+
+      # Attach the ISO to the release under a fixed name, so this link always works:
+      #   https://github.com/<owner>/<repo>/releases/latest/download/MagicOS.iso
+      # GitHub allows 2 GiB per release file. A bigger ISO is split into parts
+      # (MagicOS.iso.001, .002, ...) and the release notes say how to join them.
+      - name: Attach ISO to the release
+        if: inputs.release_tag != '' && matrix.disk-type == 'anaconda-iso'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+          OUT: ${{ steps.build.outputs.output-directory }}
+        run: |
+          set -euo pipefail
+          iso=$(find "$OUT" -name '*.iso' | head -1)
+          [[ -n "$iso" ]] || { echo "no ISO found in $OUT"; exit 1; }
+          mkdir -p /tmp/release && cd /tmp/release
+          mv "$iso" MagicOS.iso
+          sha256sum MagicOS.iso > MagicOS.iso.sha256
+          size=$(stat -c %s MagicOS.iso)
+          echo "ISO size: $size bytes"
+          if [[ "$size" -lt 2147483648 ]]; then
+            gh release upload "$TAG" MagicOS.iso MagicOS.iso.sha256 --clobber -R "$GITHUB_REPOSITORY"
+            note="Installer: [MagicOS.iso](https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/MagicOS.iso)"
+          else
+            split -b 1900M -d -a 3 --numeric-suffixes=1 MagicOS.iso MagicOS.iso.
+            rm MagicOS.iso
+            gh release upload "$TAG" MagicOS.iso.[0-9]* MagicOS.iso.sha256 --clobber -R "$GITHUB_REPOSITORY"
+            note="Installer is split in parts (GitHub's 2 GiB limit). Download all MagicOS.iso.NNN files, then run: cat MagicOS.iso.* > MagicOS.iso (the .sha256 file checks the joined ISO)."
+          fi
+          body=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json body -q .body)
+          gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --notes "${body}"$'\n\n'"${note}"

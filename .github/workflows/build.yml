@@ -311,3 +311,17 @@ jobs:
             echo "Deleting $(jq -c .tags <<<"$v")"
             gh api -X DELETE "${api}/${id}" || true
           done
+
+  # Every release also gets an installer ISO, attached as MagicOS.iso.
+  iso:
+    name: Installer ISO
+    needs: [gate, build_push]
+    if: needs.gate.outputs.publish == 'true'
+    permissions:
+      contents: write
+      packages: read
+      id-token: write
+    uses: ./.github/workflows/build-disk.yml
+    with:
+      platform: amd64
+      release_tag: ${{ needs.gate.outputs.version }}
