@@ -280,10 +280,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           signed="unsigned"; [[ "${HAS_KEY}" == "true" ]] && signed="signed"
-          gh release create "${MAGIC_VERSION}" \
-            --title "Magic OS ${MAGIC_VERSION}" \
-            --notes "Image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${MAGIC_VERSION} (${signed}). Built from ${GITHUB_SHA}." \
-            --target "${GITHUB_SHA}"
+          notes="Image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${MAGIC_VERSION} (${signed}). Built from ${GITHUB_SHA}."
+          for attempt in 1 2 3; do
+            if gh api -X POST "repos/${GITHUB_REPOSITORY}/releases" \
+                 -f tag_name="${MAGIC_VERSION}" -f target_commitish="${GITHUB_SHA}" \
+                 -f name="Magic OS ${MAGIC_VERSION}" -f body="${notes}" >/dev/null; then
+              exit 0
+            fi
+            echo "Release attempt ${attempt} failed; response headers for diagnosis:"
+            gh api -i -X POST "repos/${GITHUB_REPOSITORY}/releases" -f tag_name="${MAGIC_VERSION}" \
+              -f target_commitish="${GITHUB_SHA}" -f name="Magic OS ${MAGIC_VERSION}" -f body="${notes}" 2>&1 | head -25 || true
+            sleep 20
+          done
+          exit 1
 
       # Keep the newest release image and the three before it, so people can go
       # back. Anything older is deleted. A failure here never fails the release.
