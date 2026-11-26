@@ -1,0 +1,13 @@
+# System-wide KDE defaults for Magic OS. Users can change all of these.
+[General]
+ColorScheme=MagicEmber
+font=Open Sans,10,-1,5,50,0,0,0,0,0
+menuFont=Open Sans,10,-1,5,50,0,0,0,0,0
+toolBarFont=Open Sans,10,-1,5,50,0,0,0,0,0
+
+[KDE]
+LookAndFeelPackage=org.magicos.ember
+SingleClick=false
+
+[Icons]
+Theme=breeze-dark

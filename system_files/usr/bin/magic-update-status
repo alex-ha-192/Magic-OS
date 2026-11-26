@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Prints one word for the tray indicator and Settings:
+#   ready    an update is downloaded and will install on the next restart/shutdown
+#   current  nothing waiting
+#   unknown  could not tell
+# Never changes anything.
+set -euo pipefail
+json=$(rpm-ostree status --json 2>/dev/null) || { echo unknown; exit 0; }
+if jq -e '.deployments[] | select(.staged == true)' <<<"$json" >/dev/null 2>&1; then
+    echo ready
+else
+    echo current
+fi

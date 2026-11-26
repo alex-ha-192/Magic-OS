@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# "Go back to the previous version." The only update control Magic exposes.
+# Takes effect on the next restart; the user's files and settings are untouched.
+set -euo pipefail
+if [[ $EUID -ne 0 ]]; then
+    exec pkexec "$0" "$@"
+fi
+rpm-ostree rollback
+echo "Magic will go back to the earlier version the next time you restart."

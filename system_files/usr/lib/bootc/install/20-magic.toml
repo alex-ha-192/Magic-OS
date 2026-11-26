@@ -1,0 +1,6 @@
+[install]
+# btrfs gives Magic cheap snapshots ("see earlier versions") later on.
+root-fs-type = "btrfs"
+
+# Required so installs only accept signed Magic images.
+enforce-container-sigpolicy = true

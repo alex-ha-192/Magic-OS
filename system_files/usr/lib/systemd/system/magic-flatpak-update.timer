@@ -1,0 +1,11 @@
+[Unit]
+Description=Update apps from the App Store every day
+
+[Timer]
+OnBootSec=30min
+OnCalendar=daily
+RandomizedDelaySec=3h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

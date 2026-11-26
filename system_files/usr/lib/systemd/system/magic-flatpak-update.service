@@ -1,0 +1,12 @@
+[Unit]
+Description=Update apps from the App Store
+After=network-online.target
+Wants=network-online.target
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flatpak update --system --noninteractive --assumeyes
+ExecStart=/usr/bin/flatpak uninstall --system --unused --noninteractive --assumeyes
+Nice=10
+IOSchedulingClass=idle
