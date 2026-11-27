@@ -91,6 +91,9 @@ wait $QPID || true
 echo "::endgroup::"
 logshot install-0150s; logshot install-0600s
 grep -a "magic-installer" "$OUT/install-serial.log" | tail -60 || true
+if ! grep -aq "MAGIC-UI-OK" "$OUT/install-serial.log"; then
+    echo "::error::The installer's screen did not start"; exit 1
+fi
 if ! grep -aq "MAGIC-INSTALL-OK" "$OUT/install-serial.log"; then
     echo "::error::Install failed"; exit 1
 fi

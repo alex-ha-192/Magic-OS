@@ -22,7 +22,8 @@ Environment=MOZ_ENABLE_WAYLAND=1
 Environment=XKB_DEFAULT_LAYOUT=gb
 EnvironmentFile=-/run/magic-installer/xkb.env
 ExecStartPre=/usr/bin/bash -c 'for i in $(seq 60); do curl -s -o /dev/null http://127.0.0.1:8080/ && exit 0; sleep 0.5; done; exit 0'
-ExecStartPre=-/usr/bin/plymouth quit --retain-splash
+# "+": run as root (plymouth must let go of the screen before cage can take it).
+ExecStartPre=+-/usr/bin/plymouth quit --retain-splash
 ExecStart=/usr/bin/cage -s -d -- /usr/bin/firefox --kiosk http://127.0.0.1:8080/
 Restart=always
 RestartSec=1

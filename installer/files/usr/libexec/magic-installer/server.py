@@ -292,6 +292,20 @@ def autoinstall_check():
         ui = json.load(open(os.path.join(mp, "autoinstall.json")))
     finally:
         sh(["umount", mp])
+    # The automated test also checks that the installer's screen is really up:
+    # running for 20 seconds without restarting.
+    for _ in range(90):
+        _, out, _ = sh(["systemctl", "show", "-p", "ActiveState,NRestarts,ActiveEnterTimestampMonotonic", "magic-installer-ui.service"])
+        props = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+        since = int(props.get("ActiveEnterTimestampMonotonic", "0") or 0) / 1e6
+        _, up, _ = sh(["cat", "/proc/uptime"])
+        uptime = float(up.split()[0]) if up else 0
+        if props.get("ActiveState") == "active" and since and uptime - since > 20:
+            mi.log("MAGIC-UI-OK restarts=" + props.get("NRestarts", "?"))
+            break
+        time.sleep(2)
+    else:
+        mi.log("MAGIC-UI-FAILED: the installer screen did not stay up")
     if ui.get("disk") == "auto":
         ds = disks(True)
         ui["disk"] = ds[0]["path"] if ds else ""

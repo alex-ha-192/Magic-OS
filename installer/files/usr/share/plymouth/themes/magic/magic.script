@@ -12,7 +12,7 @@ word = Image.Text("magic", 1, 1, 1, 1, "Open Sans Light 44");
 word_s = Sprite(word);
 word_s.SetPosition(cx - word.GetWidth() / 2, cy - 90, 2);
 
-msg = Image.Text("starting the installer · this can take a minute", 0.81, 0.79, 0.77, 1, "Open Sans 15");
+msg = Image.Text("starting the installer - this can take a minute", 0.81, 0.79, 0.77, 1, "Open Sans 15");
 msg_s = Sprite(msg);
 msg_s.SetPosition(cx - msg.GetWidth() / 2, cy + 10, 2);
 
