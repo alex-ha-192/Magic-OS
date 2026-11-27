@@ -58,5 +58,8 @@ EOF
     restorecon -RF "$home" 2>/dev/null || true
 fi
 
+# The installer already created the account, so skip KDE's own first-run wizard.
+touch /etc/plasma-setup-done
+
 rm -f "$S"
 say "MAGIC-FIRSTBOOT-OK"

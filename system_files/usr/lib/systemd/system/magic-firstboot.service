@@ -2,7 +2,7 @@
 Description=Finish setting up Magic
 ConditionPathExists=/var/lib/magic-os/setup.json
 After=basic.target
-Before=display-manager.service systemd-user-sessions.service
+Before=display-manager.service systemd-user-sessions.service plasma-setup.service
 
 [Service]
 Type=oneshot
