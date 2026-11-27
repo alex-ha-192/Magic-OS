@@ -71,6 +71,7 @@ jobs:
           # Titanoboa resolves iso-dest relative to its own folder; bring it here.
           [[ -f output/MagicOS.iso ]] || mv "$ISO_DEST" output/MagicOS.iso
           ls -la output/
+          xorriso -indev output/MagicOS.iso -find / -type f -size +20M -exec lsdl 2>/dev/null | awk '{print $5, $NF}' || true
           size=$(stat -c %s output/MagicOS.iso)
           # GitHub release files are capped at 2 GiB; above that the ISO is split.
           if (( size > 2040000000 )); then

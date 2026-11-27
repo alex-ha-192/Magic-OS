@@ -42,13 +42,16 @@ systemctl mask getty@tty1.service
 plymouth-set-default-theme magic
 systemctl mask plymouth-quit.service plymouth-quit-wait.service
 
-# Live-boot initramfs (dmsquash-live), as in Titanoboa's examples.
+# Live-boot initramfs (dmsquash-live). The splash uses the kernel's simple
+# display driver, so leave the big GPU drivers and firmware out (they load later).
 # /root is a symlink in bootc images; dracut needs its target to exist.
 mkdir -p "$(realpath /root)"
 kernel=$(ls /usr/lib/modules | head -1)
 DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
     --add "dmsquash-live dmsquash-live-autooverlay plymouth" \
+    --omit-drivers "amdgpu radeon nouveau i915 xe nvidia" \
     "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
+ls -la "/usr/lib/modules/${kernel}/initramfs.img"
 
 # Titanoboa expects the EFI binaries in /boot/efi.
 mkdir -p /boot/efi
