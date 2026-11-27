@@ -26,7 +26,7 @@ XKB_ENV = "/run/magic-installer/xkb.env"
 APPS = {
     "vivaldi": "com.vivaldi.Vivaldi", "firefox": "org.mozilla.firefox",
     "libreoffice": "org.libreoffice.LibreOffice", "onlyoffice": "org.onlyoffice.desktopeditors",
-    "thunderbird": "org.mozilla.Thunderbird", "kmail": "org.kde.kmail2",
+    "thunderbird": "org.mozilla.Thunderbird", "evolution": "org.gnome.Evolution",
     "gwenview": "org.kde.gwenview", "okular": "org.kde.okular",
     "vlc": "org.videolan.VLC", "zotero": "org.zotero.Zotero", "zoom": "us.zoom.Zoom",
     "spotify": "com.spotify.Client", "signal": "org.signal.Signal", "discord": "com.discordapp.Discord",

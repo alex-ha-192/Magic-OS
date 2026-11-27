@@ -59,7 +59,7 @@ const KEYBOARDS = [
 ];
 const BROWSERS = [['vivaldi', 'Vivaldi', 'Looks and feels like Chrome · simple layout by default'], ['firefox', 'Firefox', 'Not Chrome-like · its own engine, very private']];
 const OFFICES = [['libreoffice', 'LibreOffice', 'Opens Word, Excel and PowerPoint files'], ['onlyoffice', 'ONLYOFFICE', 'Looks the most like Microsoft Office'], ['none', 'None', 'I use Google Docs or Office online']];
-const EMAILS = [['thunderbird', 'Thunderbird', 'Works with Gmail, Outlook and more'], ['kmail', 'KMail', 'Part of Plasma, matches Magic'], ['none', 'None', 'I use webmail in my browser']];
+const EMAILS = [['thunderbird', 'Thunderbird', 'Works with Gmail, Outlook and more'], ['evolution', 'Evolution', 'Good with Outlook and Exchange work accounts'], ['none', 'None', 'I use webmail in my browser']];
 const EXTRAS = [['vlc', 'VLC media player'], ['zotero', 'Zotero'], ['zoom', 'Zoom'], ['spotify', 'Spotify'], ['signal', 'Signal'], ['discord', 'Discord'], ['bitwarden', 'Bitwarden passwords'], ['steam', 'Steam'], ['gimp', 'GIMP photo editor'], ['kdenlive', 'Kdenlive video editor'], ['audacity', 'Audacity'], ['obs', 'OBS Studio'], ['calibre', 'Calibre e-books']];
 const RECOMMENDED = [['internet', 'Vivaldi'], ['documents, spreadsheets, slides', 'LibreOffice'], ['email', 'Thunderbird'], ['photos', 'Gwenview'], ['pdf files', 'Okular'], ['music & video', 'VLC']];
 
