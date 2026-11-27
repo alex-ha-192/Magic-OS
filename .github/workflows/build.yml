@@ -117,7 +117,7 @@ jobs:
         run: |
           python3 -m py_compile installer/files/usr/libexec/magic-installer/*.py tests/qmp.py system_files/usr/share/magic-settings/magic_settings.py tools/gen-theme.py
           node --check installer/files/usr/share/magic-installer/ui/app.js
-          bash -n installer/build.sh tests/e2e-vm.sh system_files/usr/libexec/magic-os/* build_files/steps/*.sh
+          for f in installer/build.sh tests/e2e-vm.sh system_files/usr/libexec/magic-os/* build_files/steps/*.sh; do head -1 "$f" | grep -q python || bash -n "$f"; done
           python3 -c "import json; json.load(open('installer/files/usr/lib64/firefox/distribution/policies.json'))"
       - name: Every app the installer offers exists on Flathub
         run: |
@@ -239,6 +239,10 @@ jobs:
             [[ "$(plymouth-set-default-theme)" == "magic" ]]
             lsinitrd /usr/lib/modules/*/initramfs.img | grep -q "plymouth/themes/magic/magic.script"
             QT_QPA_PLATFORM=offscreen MAGIC_SETTINGS_DEMO=1 timeout 120 /usr/bin/magic-settings --check
+            test -f /usr/share/plasma/plasmoids/org.magicos.start/contents/ui/StartMenu.qml
+            XDG_CURRENT_DESKTOP=KDE /usr/libexec/magic-os/start-helper data | jq -e ".apps | length > 5"
+            /usr/libexec/magic-os/versions | jq -e ".running | test(\"^[0-9]{4}-\")"
+            grep -q "Hidden=true" /etc/xdg/autostart/org.kde.plasma-welcome.desktop
             grep -q "^Name=Advanced Settings" /usr/share/applications/systemsettings.desktop
             grep -q "^Name=App Store" /usr/share/applications/org.kde.discover.desktop
             if rpm -q plasma-discover-rpm-ostree; then echo "Discover still has system updates"; exit 1; fi

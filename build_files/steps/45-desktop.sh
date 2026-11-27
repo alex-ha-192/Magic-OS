@@ -27,6 +27,10 @@ fi
 mkdir -p /etc/xdg/autostart
 printf '[Desktop Entry]\nType=Application\nName=Discover notifier\nHidden=true\n' > /etc/xdg/autostart/org.kde.discover.notifier.desktop
 
+# ---- No KDE Welcome Center after the first sign-in: the installer did that.
+printf '[Desktop Entry]\nType=Application\nName=Welcome Center\nHidden=true\n' > /etc/xdg/autostart/org.kde.plasma-welcome.desktop
+printf '[General]\nShouldShow=false\nLastSeenVersion=99.0.0\n' > /etc/xdg/plasma-welcomerc
+
 # ---- Start-up screen (Plymouth). The initramfs step after this picks it up.
 dnf5 install -y plymouth-plugin-script plymouth-plugin-label
 plymouth-set-default-theme magic
@@ -36,14 +40,8 @@ sed -i '/^LOGO=/d' /usr/lib/os-release
 echo 'LOGO=magic-start' >> /usr/lib/os-release
 gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true
 
-# ---- Sign-in screen: Magic wallpaper (SDDM Breeze theme)
-if [[ -d /usr/share/sddm/themes/breeze ]]; then
-    cat > /usr/share/sddm/themes/breeze/theme.conf.user <<EOF
-[General]
-background=/var/lib/magic-os/signin.jpg
-type=image
-EOF
-fi
+# ---- Sign-in screen: Magic wallpaper (magic-firstboot swaps in the chosen accent)
+/usr/libexec/magic-os/signin-wallpaper /var/lib/magic-os/signin.jpg
 
 # ---- Check Magic Settings loads every page without errors.
 QT_QPA_PLATFORM=offscreen MAGIC_SETTINGS_DEMO=1 timeout 120 /usr/bin/magic-settings --check

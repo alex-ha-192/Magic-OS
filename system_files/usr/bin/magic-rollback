@@ -16,7 +16,7 @@ fi
 if [[ $EUID -ne 0 ]]; then
     exec pkexec "$0" "$@"
 fi
-leaving=$(rpm-ostree status --json | jq -r '.deployments[] | select(.booted) | .version // empty')
+leaving=$(. /usr/lib/os-release; echo "${VERSION:-}")
 # Drop an update that is waiting, then make the previous version the default.
 rpm-ostree cleanup --pending || true
 rpm-ostree rollback

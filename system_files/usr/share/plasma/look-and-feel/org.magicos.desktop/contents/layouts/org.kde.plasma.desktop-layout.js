@@ -30,17 +30,8 @@ panel.hiding = "none";
 panel.floating = false;
 panel.lengthMode = "fill";
 
-var start = panel.addWidget("org.kde.plasma.kickoff");
-start.currentConfigGroup = ["General"];
-start.writeConfig("icon", "magic-start");
-start.writeConfig("favoritesPortedToKAstats", "false");
-start.writeConfig("favorites", [
-    "preferred://browser",
-    "org.kde.dolphin.desktop",
-    "org.kde.discover.desktop",
-    "org.magicos.Settings.desktop"
-].join(","));
-start.writeConfig("showActionButtonCaptions", "true");
+// Magic's own Start menu (org.magicos.start).
+panel.addWidget("org.magicos.start");
 
 // Pin whichever browser the installer put on (Vivaldi or Firefox).
 var launchers = [];

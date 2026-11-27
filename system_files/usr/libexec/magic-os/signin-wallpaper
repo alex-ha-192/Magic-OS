@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Set the sign-in screen picture (Plasma Login Manager; SDDM as a fallback).
+#   signin-wallpaper /path/to/picture.jpg
+set -euo pipefail
+pic=$1
+# Plasma Login reads this from /etc/plasmalogin.conf itself (not plasmalogin.conf.d).
+kwriteconfig6 --file /etc/plasmalogin.conf --group Greeter --key WallpaperPluginId org.kde.image
+kwriteconfig6 --file /etc/plasmalogin.conf --group Greeter --group Wallpaper --group org.kde.image --group General \
+    --key Image "file://${pic}"
+if [[ -d /usr/share/sddm/themes/breeze ]]; then
+    mkdir -p /etc/sddm.conf.d
+    printf '[Theme]\nCurrent=breeze\n' > /etc/sddm.conf.d/10-magic.conf
+fi

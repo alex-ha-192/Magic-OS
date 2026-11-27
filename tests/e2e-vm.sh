@@ -25,7 +25,7 @@ cat > "$WORK/autoinstall.json" <<JSON
   "locale": "en_GB.UTF-8", "kb_layout": "gb", "kb_variant": "", "clock": "24",
   "timezone": "Europe/London", "accent": "teal",
   "software": "own", "browser": "firefox", "office": "none", "email": "none", "extras": [],
-  "extra_kargs": ["console=tty0", "console=ttyS0,115200", "systemd.show_status=1"]
+  "extra_kargs": ["console=ttyS0,115200", "console=tty0"]
 }
 JSON
 # While the image package is private, let the test VM log in (short-lived CI token).
@@ -131,7 +131,7 @@ if (( ok )); then
     # The installed system prints a report once the desktop is up.
     for _ in $(seq 160); do serial "MAGIC-REPORT-END" && { signed_in=1; break; }; sleep 5; done
     shot "$WORK/qmp2" "desktop"
-    Q key meta_l; sleep 4; shot "$WORK/qmp2" "start-menu"; Q key esc; sleep 2
+    Q key meta_l; sleep 5; shot "$WORK/qmp2" "start-menu"; Q key esc; sleep 2
     open_app() {   # $1 command, $2 screenshot name, $3 seconds to wait
         Q key alt+f2; sleep 3; Q type "$1"; sleep 3; Q key ret; sleep "$3"
         shot "$WORK/qmp2" "$2"; Q key alt+f4; sleep 3

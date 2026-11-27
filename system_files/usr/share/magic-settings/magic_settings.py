@@ -153,21 +153,13 @@ def read_accent():
 def read_updates():
     if DEMO:
         return {"booted": "2026-11-21", "staged": "2026-11-28", "previous": "2026-11-14", "rolled_back": False}
-    rc, out, _ = sh(["rpm-ostree", "status", "--json"], 15)
     res = {"booted": None, "staged": None, "previous": None, "rolled_back": False}
+    rc, out, _ = sh(["/usr/libexec/magic-os/versions"], 20)
     try:
-        deps = json.loads(out)["deployments"]
+        v = json.loads(out)
+        res.update(booted=v.get("running") or None, staged=v.get("waiting") or None, previous=v.get("previous") or None)
     except Exception:
-        return res
-    booted_i = next((i for i, d in enumerate(deps) if d.get("booted")), None)
-    for i, d in enumerate(deps):
-        v = d.get("version") or (d.get("checksum", "")[:8])
-        if d.get("booted"):
-            res["booted"] = v
-        elif d.get("staged") or (booted_i is not None and i < booted_i):
-            res["staged"] = v       # will be used on the next restart
-        elif res["previous"] is None:
-            res["previous"] = v
+        pass
     res["rolled_back"] = os.path.exists("/var/lib/magic-os/skip-version")
     return res
 

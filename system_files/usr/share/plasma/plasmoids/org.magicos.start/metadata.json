@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "Magic OS" }],
+        "Category": "Application Launchers",
+        "Description": "Magic's Start menu: your apps, everyday tasks and power.",
+        "Icon": "magic-start",
+        "Id": "org.magicos.start",
+        "License": "GPL-3.0-or-later",
+        "Name": "Magic Start"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": ["org.kde.plasma.launchermenu"]
+}

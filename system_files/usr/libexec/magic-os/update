@@ -3,28 +3,20 @@
 # Daily: if a newer Magic is out, download it and get it ready for the next
 # restart. Never restarts anything. Skips a version the person went back from.
 set -uo pipefail
-REF="ghcr.io/alex-ha-192/magic-os:latest"
 SKIP_FILE=/var/lib/magic-os/skip-version
-
-remote=$(skopeo inspect --no-tags "docker://${REF}" 2>/dev/null | jq -r '.Labels["org.opencontainers.image.version"] // empty')
-if [[ -z "$remote" ]]; then
+v=$(/usr/libexec/magic-os/versions --online)
+newest=$(jq -r .newest <<<"$v"); running=$(jq -r .running <<<"$v"); waiting=$(jq -r .waiting <<<"$v")
+skip=$(cat "$SKIP_FILE" 2>/dev/null || true)
+echo "newest=${newest:-unknown} running=$running waiting=${waiting:-none} skip=${skip:-none}"
+if [[ -z "$newest" ]]; then
     echo "Could not reach the update server; will try again later."
     exit 0
 fi
-status=$(rpm-ostree status --json)
-booted=$(jq -r '.deployments[] | select(.booted) | .version // empty' <<<"$status")
-pending=$(jq -r '[.deployments[] | select(.booted | not)][0] | select(.staged or false) | .version // empty' <<<"$status" 2>/dev/null)
-skip=$(cat "$SKIP_FILE" 2>/dev/null || true)
-echo "available=$remote running=$booted waiting=${pending:-none} skip=${skip:-none}"
-
-if [[ "$remote" == "$booted" || "$remote" == "$pending" ]]; then
+[[ "$newest" == "$running" || "$newest" == "$waiting" ]] && exit 0
+if [[ -n "$skip" && "$newest" == "$skip" ]]; then
+    echo "Skipping $newest: you went back from it. Waiting for a newer version."
     exit 0
 fi
-if [[ -n "$skip" && "$remote" == "$skip" ]]; then
-    echo "Skipping $remote: you went back from it. Waiting for a newer version."
-    exit 0
-fi
-# A newer version than the one skipped: stop skipping.
 rm -f "$SKIP_FILE"
 # Stages the new version; it is used on the next restart or shutdown.
 rpm-ostree upgrade
