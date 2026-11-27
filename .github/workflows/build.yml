@@ -217,7 +217,7 @@ jobs:
             . /usr/lib/os-release
             [[ "$NAME" == "Magic OS" ]]
             [[ "$VERSION" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}(-[0-9]+)?$ ]]
-            grep -q "AutomaticUpdatePolicy=stage" /etc/rpm-ostreed.conf
+            grep -q "AutomaticUpdatePolicy=none" /etc/rpm-ostreed.conf
             test -x /usr/bin/magic-rollback
             test -x /usr/bin/magic-update-status
             test -f /usr/share/plasma/look-and-feel/org.magicos.desktop/metadata.json
