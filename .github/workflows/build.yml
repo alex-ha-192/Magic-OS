@@ -226,7 +226,7 @@ jobs:
             systemctl is-enabled magic-firstboot.service
             systemctl is-enabled magic-apps.timer
             test -x /usr/libexec/magic-os/firstboot
-            # theming and Magic's own apps
+            # theming and the Magic apps
             for a in Lime Ember Magenta Teal Blue Violet; do
               test -f /usr/share/color-schemes/Magic$a.colors
               test -f /usr/share/wallpapers/Magic$a/contents/images/3840x2160.jpg
