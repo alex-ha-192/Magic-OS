@@ -10,13 +10,13 @@ PKGS=(
     ntfsprogs ntfs-3g efibootmgr mokutil
     # screen: a kiosk (cage) showing the installer in Firefox
     cage firefox mesa-dri-drivers mesa-libEGL mesa-libgbm
-    open-sans-fonts google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-sans-mono-fonts
+    open-sans-fonts google-noto-sans-fonts google-droid-sans-fonts google-noto-sans-mono-fonts
     xkeyboard-config kbd tzdata glibc-langpack-en
     # network and Wi-Fi
     NetworkManager NetworkManager-wifi wpa_supplicant
     linux-firmware iwlwifi-mvm-firmware iwlwifi-dvm-firmware iwlegacy-firmware atheros-firmware
     brcmfmac-firmware realtek-firmware mt7xxx-firmware libertas-firmware
-    amd-gpu-firmware intel-gpu-firmware nvidia-gpu-firmware
+    amd-gpu-firmware intel-gpu-firmware
     # start-up screen
     plymouth plymouth-scripts plymouth-plugin-script plymouth-plugin-label
     # live boot

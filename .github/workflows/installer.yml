@@ -71,6 +71,11 @@ jobs:
           # Titanoboa resolves iso-dest relative to its own folder; bring it here.
           [[ -f output/MagicOS.iso ]] || mv "$ISO_DEST" output/MagicOS.iso
           ls -la output/
+          size=$(stat -c %s output/MagicOS.iso)
+          # GitHub release files are capped at 2 GiB; above that the ISO is split.
+          if (( size > 2040000000 )); then
+            echo "::warning::MagicOS.iso is $(( size / 1048576 )) MiB, near or over GitHub's 2 GiB file limit"
+          fi
           sudo podman rmi -f localhost/magic-installer:latest || true
           df -h /
 
