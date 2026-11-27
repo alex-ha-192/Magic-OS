@@ -60,11 +60,15 @@ logshot() {
 import base64, io, sys
 try:
     from PIL import Image
-    im = Image.open(sys.argv[1]).convert("RGB"); im.thumbnail((960, 600))
-    b = io.BytesIO(); im.save(b, "JPEG", quality=60); data = b.getvalue()
+    im = Image.open(sys.argv[1]).convert("RGB"); im.thumbnail((720, 450))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=55); data = b.getvalue()
 except Exception:
     data = open(sys.argv[1], "rb").read()
-print("SCREENSHOT-BEGIN " + sys.argv[2]); print(base64.b64encode(data).decode()); print("SCREENSHOT-END")
+enc = base64.b64encode(data).decode()
+print("SCREENSHOT-BEGIN " + sys.argv[2])
+for i in range(0, len(enc), 800):
+    print("B64 " + enc[i:i + 800])
+print("SCREENSHOT-END")
 PY
 }
 
@@ -110,11 +114,15 @@ if (( ok )); then
     shot "$WORK/qmp2" "boot-signin-screen"; logshot boot-signin-screen
     grep -a -E "sddm|display-manager|Reached target.*[Gg]raphical" "$OUT/boot-serial.log" | tail -5 || true
 fi
-(( ok )) || { shot "$WORK/qmp2" "boot-failed"; logshot boot-failed; logshot boot-passphrase-prompt; }
+if (( ! ok )); then
+    echo "----- last lines of the installed system's serial console -----"
+    sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$OUT/boot-serial.log" | tr -d '\r' | grep -av '^\s*$' | tail -150 || true
+    echo "-----"
+    shot "$WORK/qmp2" "boot-failed"; logshot boot-failed; logshot boot-passphrase-prompt
+fi
 python3 "$HERE/qmp.py" "$WORK/qmp2" quit >/dev/null 2>&1 || kill $QPID 2>/dev/null || true
 echo "::endgroup::"
 if (( ! ok )); then
-    tail -80 "$OUT/boot-serial.log" || true
     echo "::error::First boot did not finish"; exit 1
 fi
 echo "End-to-end test passed: installed, TPM unlocked, first-boot setup done."

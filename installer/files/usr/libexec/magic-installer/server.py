@@ -238,6 +238,11 @@ def start_install(ui):
         finally:
             st["running"] = False
             if STATE["autoinstall"]:
+                # For the automated test: show how the installer's own screen fared.
+                _, out, _ = sh(["journalctl", "-b", "--no-pager", "-o", "cat", "-n", "60",
+                                "-u", "magic-installer-ui.service"], 20)
+                for line in out.splitlines():
+                    mi.log("ui-journal: " + line[:240])
                 time.sleep(3)
                 subprocess.run(["systemctl", "poweroff"])
 
