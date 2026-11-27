@@ -53,6 +53,9 @@ jobs:
           sudo podman build --cap-add sys_admin --security-opt label=disable --squash \
             -t localhost/magic-installer:latest installer/
 
+      - name: Output folder
+        run: mkdir -p output
+
       - name: Make the ISO
         id: iso
         uses: ublue-os/titanoboa@5c457c3d0518bd17e754be0fd98a60d29d26abb4 # main

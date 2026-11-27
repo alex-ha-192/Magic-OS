@@ -36,6 +36,8 @@ systemctl set-default graphical.target
 systemctl mask getty@tty1.service
 
 # Live-boot initramfs (dmsquash-live), as in Titanoboa's examples.
+# /root is a symlink in bootc images; dracut needs its target to exist.
+mkdir -p "$(realpath /root)"
 kernel=$(ls /usr/lib/modules | head -1)
 DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
     --add "dmsquash-live dmsquash-live-autooverlay" \
