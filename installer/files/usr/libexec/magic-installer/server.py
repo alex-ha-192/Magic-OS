@@ -138,6 +138,28 @@ def geo_guess():
 
 
 # ----------------------------------------------------------------- keyboard
+def current_keyboard():
+    out = {"layout": "gb", "variant": ""}
+    try:
+        for line in open(XKB_ENV):
+            k, _, v = line.strip().partition("=")
+            if k == "XKB_DEFAULT_LAYOUT":
+                out["layout"] = v
+            elif k == "XKB_DEFAULT_VARIANT":
+                out["variant"] = v
+    except OSError:
+        pass
+    return out
+
+
+def ensure_keyboard_default():
+    """The screen's starting layout matches the installer's starting language (English UK)."""
+    if not os.path.exists(XKB_ENV):
+        os.makedirs(os.path.dirname(XKB_ENV), exist_ok=True)
+        with open(XKB_ENV, "w") as f:
+            f.write("XKB_DEFAULT_LAYOUT=gb\nXKB_DEFAULT_VARIANT=\n")
+
+
 def set_keyboard(layout, variant):
     if not re.match(r"^[a-z]{2,8}$", layout or "") or not re.match(r"^[a-z0-9_-]{0,20}$", variant or ""):
         return {"ok": False}
@@ -309,6 +331,7 @@ class H(BaseHTTPRequestHandler):
                     "net": net_status(), "tpm": mi.tpm_status(), "secure_boot": mi.secure_boot_enabled(),
                     "uefi": mi.uefi_boot(), "recovery_key": STATE["recovery_key"],
                     "install": STATE["install"], "autoinstall": STATE["autoinstall"],
+                    "keyboard": current_keyboard(),
                 })
             if path == "/api/disks":
                 return self._json(disks("force" in self.path))
@@ -367,6 +390,7 @@ def main():
     global UI_DIR
     if len(sys.argv) > 1:
         UI_DIR = os.path.realpath(sys.argv[1])  # for previewing the UI
+    ensure_keyboard_default()
     srv = ThreadingHTTPServer(("127.0.0.1", int(os.environ.get("MAGIC_INSTALLER_PORT", "8080"))), H)
     threading.Thread(target=autoinstall_check, daemon=True).start()
     srv.serve_forever()

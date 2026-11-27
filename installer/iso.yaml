@@ -4,8 +4,8 @@ grub2:
   timeout: 3
   entries:
     - name: "Install Magic OS"
-      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0 plymouth.enable=1 splash"
       initrd: "/images/pxeboot/initrd.img"
     - name: "Install Magic OS (basic graphics)"
-      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0 nomodeset"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0 plymouth.enable=1 splash nomodeset"
       initrd: "/images/pxeboot/initrd.img"

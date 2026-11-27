@@ -1,0 +1,49 @@
+// Magic installer start-up screen: charcoal, the sparkle mark, "starting the
+// installer" and a slow orange bar that moves, so it never looks frozen.
+Window.SetBackgroundTopColor(0.071, 0.063, 0.059);
+Window.SetBackgroundBottomColor(0.071, 0.063, 0.059);
+
+W = Window.GetWidth();
+H = Window.GetHeight();
+cx = Window.GetX() + W / 2;
+cy = Window.GetY() + H / 2;
+
+word = Image.Text("magic", 1, 1, 1, 1, "Open Sans Light 44");
+word_s = Sprite(word);
+word_s.SetPosition(cx - word.GetWidth() / 2, cy - 90, 2);
+
+msg = Image.Text("starting the installer · this can take a minute", 0.81, 0.79, 0.77, 1, "Open Sans 15");
+msg_s = Sprite(msg);
+msg_s.SetPosition(cx - msg.GetWidth() / 2, cy + 10, 2);
+
+track_w = 320;
+track = Image("track.png").Scale(track_w, 4);
+track_s = Sprite(track);
+track_s.SetPosition(cx - track_w / 2, cy + 60, 1);
+
+seg_w = 80;
+seg = Image("seg.png").Scale(seg_w, 4);
+seg_s = Sprite(seg);
+seg_s.SetZ(2);
+
+t = 0;
+fun refresh() {
+    t++;
+    pos = (t * 3) % (track_w + seg_w) - seg_w;
+    x = pos;
+    w = seg_w;
+    if (x < 0) { w = seg_w + x; x = 0; }
+    if (x + w > track_w) { w = track_w - x; }
+    if (w < 1) { w = 1; }
+    seg_s.SetImage(Image("seg.png").Scale(w, 4));
+    seg_s.SetPosition(cx - track_w / 2 + x, cy + 60, 2);
+}
+Plymouth.SetRefreshFunction(refresh);
+
+// Messages and password prompts are not used by the installer, but show any message plainly.
+fun message_cb(text) {
+    m = Image.Text(text, 1, 0.54, 0.3, 1, "Open Sans 13");
+    msg2 = Sprite(m);
+    msg2.SetPosition(cx - m.GetWidth() / 2, cy + 100, 2);
+}
+Plymouth.SetMessageFunction(message_cb);

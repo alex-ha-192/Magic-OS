@@ -17,6 +17,8 @@ PKGS=(
     linux-firmware iwlwifi-mvm-firmware iwlwifi-dvm-firmware iwlegacy-firmware atheros-firmware
     brcmfmac-firmware realtek-firmware mt7xxx-firmware libertas-firmware
     amd-gpu-firmware intel-gpu-firmware nvidia-gpu-firmware
+    # start-up screen
+    plymouth plymouth-scripts plymouth-plugin-script plymouth-plugin-label
     # live boot
     dracut-live grub2-efi-x64-cdboot
 )
@@ -35,12 +37,17 @@ systemctl enable NetworkManager.service magic-installer-backend.service magic-in
 systemctl set-default graphical.target
 systemctl mask getty@tty1.service
 
+# Start-up screen: stays up until the installer's screen takes over
+# (magic-installer-ui.service quits it with --retain-splash).
+plymouth-set-default-theme magic
+systemctl mask plymouth-quit.service plymouth-quit-wait.service
+
 # Live-boot initramfs (dmsquash-live), as in Titanoboa's examples.
 # /root is a symlink in bootc images; dracut needs its target to exist.
 mkdir -p "$(realpath /root)"
 kernel=$(ls /usr/lib/modules | head -1)
 DRACUT_NO_XATTR=1 dracut -v --force --zstd --reproducible --no-hostonly \
-    --add "dmsquash-live dmsquash-live-autooverlay" \
+    --add "dmsquash-live dmsquash-live-autooverlay plymouth" \
     "/usr/lib/modules/${kernel}/initramfs.img" "${kernel}"
 
 # Titanoboa expects the EFI binaries in /boot/efi.

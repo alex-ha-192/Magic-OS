@@ -123,4 +123,26 @@ pre.log { margin: 0; background: var(--side); border: 1px solid var(--line); pad
   max-height: 180px; overflow: auto; white-space: pre-wrap; }
 .spin { width: 18px; height: 18px; border: 2px solid var(--line-2); border-top-color: var(--at); border-radius: 50%; animation: s 1s linear infinite; display: inline-block; }
 @keyframes s { to { transform: rotate(360deg); } }
-@media (max-height: 760px) { .body { padding-top: 24px; } h1.t { font-size: 38px; } }
+/* Smaller screens (VMs often start at 1024x768 or 800x600). */
+pre.log { max-height: 40vh; }
+@media (max-height: 760px) {
+  .body { padding-top: 20px; padding-bottom: 16px; gap: 12px; } h1.t { font-size: 36px; } p.s { font-size: 15px; line-height: 22px; }
+  .bar { height: 68px; } nav.side { padding: 24px 22px; gap: 22px; } .steps li { padding: 4px 0; font-size: 16px; }
+  .panel { padding: 14px 16px; gap: 10px; } .fld, .sel { height: 38px; font-size: 16px; } .preview { min-height: 200px; }
+}
+@media (max-width: 1180px) {
+  nav.side { width: 220px; padding-left: 22px; padding-right: 22px; }
+  .body { padding-left: 28px; padding-right: 28px; } .bar { padding: 0 28px; }
+  .row { flex-wrap: wrap; } .row > * { flex: 1 1 340px !important; width: auto !important; }
+  .row.ready > * { flex-basis: 100% !important; }
+  .grid4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pick { flex-wrap: wrap; } .pick .card { flex: 1 1 180px; }
+}
+@media (max-width: 900px) {
+  nav.side { width: 64px; padding: 20px 12px; align-items: center; }
+  .brand .word, .side .foot { display: none; }
+  .steps li { font-size: 0; gap: 0; justify-content: center; } .steps li .n { font-size: 13px; }
+  .body { padding: 18px 20px; } .bar { padding: 0 20px; } .bar .hint { display: none; }
+  h1.t { font-size: 32px; } .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row > * { flex-basis: 100% !important; } .sum .k { width: 84px; }
+  .pri, .ghost { padding: 0 18px; } .big { padding: 0 24px; font-size: 16px; }
+}

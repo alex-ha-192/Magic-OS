@@ -1,6 +1,6 @@
 [Unit]
 Description=Magic installer (screen)
-After=systemd-user-sessions.service plymouth-quit-wait.service magic-installer-backend.service
+After=systemd-user-sessions.service magic-installer-backend.service
 Wants=magic-installer-backend.service
 Conflicts=getty@tty1.service
 
@@ -19,9 +19,10 @@ UtmpIdentifier=tty1
 UtmpMode=user
 Environment=XDG_SESSION_TYPE=wayland
 Environment=MOZ_ENABLE_WAYLAND=1
-Environment=XKB_DEFAULT_LAYOUT=us
+Environment=XKB_DEFAULT_LAYOUT=gb
 EnvironmentFile=-/run/magic-installer/xkb.env
 ExecStartPre=/usr/bin/bash -c 'for i in $(seq 60); do curl -s -o /dev/null http://127.0.0.1:8080/ && exit 0; sleep 0.5; done; exit 0'
+ExecStartPre=-/usr/bin/plymouth quit --retain-splash
 ExecStart=/usr/bin/cage -s -d -- /usr/bin/firefox --kiosk http://127.0.0.1:8080/
 Restart=always
 RestartSec=1

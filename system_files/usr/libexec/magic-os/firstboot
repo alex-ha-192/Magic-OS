@@ -49,11 +49,23 @@ if [[ -n "$user" ]]; then
 AccentColor=$rgb
 accentColorFromWallpaper=false
 EOF
+    # Keyboard layout for Plasma (it keeps its own setting per person).
+    if [[ -n "$kl" ]]; then
+        printf '[Layout]\nUse=true\nLayoutList=%s\nVariantList=%s\n' "$kl" "$kv" > "$home/.config/kxkbrc"
+    fi
+    # Language for Plasma's own menus (e.g. British English spellings).
+    if [[ -n "$loc" ]]; then
+        lang=${loc%%.*}
+        printf '[Translations]\nLANGUAGE=%s:%s\n' "$lang" "${lang%%_*}" > "$home/.config/plasma-localerc.lang"
+    fi
     # 12- or 24-hour clock. Only English needs a nudge; other languages keep their own convention.
     if [[ "$loc" == en_* ]]; then
         if [[ "$(j .clock)" == "12" ]]; then lct=en_US.UTF-8; else lct=en_GB.UTF-8; fi
         printf '[Formats]\nLANG=%s\nLC_TIME=%s\n' "$loc" "$lct" > "$home/.config/plasma-localerc"
+    elif [[ -n "$loc" ]]; then
+        printf '[Formats]\nLANG=%s\n' "$loc" > "$home/.config/plasma-localerc"
     fi
+    [[ -f "$home/.config/plasma-localerc.lang" ]] && { echo >> "$home/.config/plasma-localerc"; cat "$home/.config/plasma-localerc.lang" >> "$home/.config/plasma-localerc"; rm -f "$home/.config/plasma-localerc.lang"; }
     chown -R "$user:$user" "$home/.config"
     restorecon -RF "$home" 2>/dev/null || true
 fi

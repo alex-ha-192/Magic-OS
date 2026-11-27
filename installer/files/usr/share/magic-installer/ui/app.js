@@ -441,7 +441,7 @@ function vReady(el) {
   const rows = [['you', `${esc(S.full_name)} · ${esc(S.computer_name)}`, 2], ['place', `${esc(zone().city)} (${esc(utcOffset(S.timezone))}) · ${esc(lang)} · ${esc(kbName())} keyboard · ${S.clock}-hour clock`, 1], ['disk', disk, 3], ['protection', prot, 4], ['software', esc(softwareLine()), 5]];
   const next = [S.mode === 'alongside' ? 'Make room next to Windows' : S.mode === 'erase' ? 'Prepare the disk' : 'Prepare the empty space', S.encrypt ? 'Set up encryption' : null, 'Download and install Magic', 'Install your apps', 'Restart into Magic'].filter(Boolean);
   el.innerHTML = `<div><h1 class="t">ready to install</h1><p class="s">Nothing has changed on your computer yet. Have a last look, then press install.</p></div>
-  <div class="row"><section class="panel" style="flex:1;gap:0;min-width:0">${rows.map(([k, v, i]) => `<div class="sum"><span class="k">${k}</span><span class="v">${v}</span><button class="link" style="font-size:14px" onclick="jump(${i})">change</button></div>`).join('')}</section>
+  <div class="row ready"><section class="panel" style="flex:1;gap:0;min-width:0">${rows.map(([k, v, i]) => `<div class="sum"><span class="k">${k}</span><span class="v">${v}</span><button class="link" style="font-size:14px" onclick="jump(${i})">change</button></div>`).join('')}</section>
   <section class="panel" style="width:380px;flex:none"><h2 class="ac">what happens next</h2><ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-size:16px;font-weight:300;line-height:23px">${next.map((n) => `<li>${n}</li>`).join('')}</ol>
   <p class="note" style="margin:auto 0 0;font-size:14px;line-height:21px">${S.mode === 'erase' ? 'This takes about 10 to 20 minutes, depending on your internet.' : 'Each time you turn the computer on, you\'ll pick Windows or Magic. Magic is the default.'}</p></section></div>`;
 }
@@ -470,11 +470,20 @@ async function poll() {
 }
 function renderInstalling(el) {
   const p = PROG || { stage: 'Starting', percent: 0, log: [] };
-  el.innerHTML = `<div><h1 class="t">installing magic</h1><p class="s">This takes a while. You can leave the computer to it, but keep it plugged in and connected.</p></div>
-  <section class="panel" style="max-width:900px;gap:16px"><div style="display:flex;justify-content:space-between;align-items:baseline"><h2>${esc(p.stage || '')}</h2><span style="font-size:28px;font-weight:300">${p.percent || 0}%</span></div>
-  <div class="progress"><span style="width:${p.percent || 0}%"></span></div>
-  <details><summary class="hint" style="cursor:pointer">details</summary><pre class="log">${esc((p.log || []).join('\n'))}</pre></details></section>`;
-  bar('', '<span class="hint">Please don\'t turn the computer off</span>');
+  // Build once, then only update the numbers, so "details" stays open and scrollable.
+  if (!el.querySelector('#pbar')) {
+    el.innerHTML = `<div><h1 class="t">installing magic</h1><p class="s">This takes a while. You can leave the computer to it, but keep it plugged in and connected.</p></div>
+    <section class="panel" style="max-width:900px;gap:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><h2 id="pstage"></h2><span id="ppct" style="font-size:28px;font-weight:300"></span></div>
+    <div class="progress"><span id="pbar"></span></div>
+    <details id="pdet"><summary class="hint" style="cursor:pointer">details</summary><pre class="log" id="plog"></pre></details></section>`;
+    bar('', '<span class="hint">Please don\'t turn the computer off</span>');
+  }
+  $('#pstage').textContent = (p.stage || '').toLowerCase();
+  $('#ppct').textContent = (p.percent || 0) + '%';
+  $('#pbar').style.width = (p.percent || 0) + '%';
+  const log = $('#plog'), atEnd = log.scrollTop + log.clientHeight >= log.scrollHeight - 4;
+  const text = (p.log || []).join('\n');
+  if (log.textContent !== text) { log.textContent = text; if (atEnd) log.scrollTop = log.scrollHeight; }
 }
 function renderDone(el) {
   el.innerHTML = `<div><h1 class="t">magic is ready</h1><p class="s">Restart to start using it. Remove the USB stick when the screen goes dark.</p></div>
@@ -505,6 +514,10 @@ function renderError(el) {
     try { const g = await api('/api/geo'); if (g.timezone) S.timezone = g.timezone; } catch (e) {}
   }
   if (S.step === 0 && ST.net.online && !localStorage.getItem('magic-installer')) { /* stay on 0 so people see they're online */ }
+  // The screen starts with the backend's layout; if it differs from what we show, apply ours.
+  if (ST.keyboard && (ST.keyboard.layout !== S.kb_layout || (ST.keyboard.variant || '') !== S.kb_variant)) {
+    setKeyboard(S.kb_layout, S.kb_variant); return;
+  }
   enterStep();
   render();
   setInterval(() => { if (PHASE === 'steps' && S.step === 0) refreshStatus().then(render); }, 5000);
