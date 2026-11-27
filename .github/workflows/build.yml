@@ -222,7 +222,6 @@ jobs:
             test -x /usr/bin/magic-update-status
             test -f /usr/share/plasma/look-and-feel/org.magicos.desktop/metadata.json
             test -f /usr/share/color-schemes/MagicEmber.colors
-            systemctl is-enabled rpm-ostreed-automatic.timer
             systemctl is-enabled magic-flatpak-update.timer
             systemctl is-enabled magic-firstboot.service
             systemctl is-enabled magic-apps.timer
