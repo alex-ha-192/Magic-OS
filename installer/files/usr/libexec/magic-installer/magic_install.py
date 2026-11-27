@@ -508,12 +508,13 @@ def download_and_install(cfg, prog, kargs):
     cmd = podman + ["run", "--rm", "--privileged", "--pid=host",
                     "--security-opt", "label=type:unconfined_t",
                     "-v", "/dev:/dev", "-v", f"{storage}:/var/lib/containers/storage",
-                    "-v", f"{TARGET}:{TARGET}", "-v", f"{TOP}/install-cache/tmp:/var/tmp",
+                    # Inside the image /mnt is a symlink, so mount the target at /target.
+                    "-v", f"{TARGET}:/target", "-v", f"{TOP}/install-cache/tmp:/var/tmp",
                     image, "bootc", "install", "to-filesystem",
                     "--target-imgref", target_ref, "--skip-fetch-check", "--skip-finalize"]
     for k in kargs + list(cfg.get("extra_kargs", [])):
         cmd += ["--karg", k]
-    cmd.append(TARGET)
+    cmd.append("/target")
     stream(cmd)
 
 
