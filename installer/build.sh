@@ -27,9 +27,9 @@ systemctl disable bootc-fetch-apply-updates.timer 2>/dev/null || true
 systemctl mask bootc-fetch-apply-updates.timer bootc-fetch-apply-updates.service 2>/dev/null || true
 systemctl disable sshd.service 2>/dev/null || true
 
-# The person at the screen: an unprivileged user that runs the kiosk.
-useradd --system --create-home --home-dir /var/lib/magic-installer/home --shell /usr/sbin/nologin \
-    --groups video,input,render installer || true
+# The kiosk user comes from /usr/lib/sysusers.d/magic-installer.conf; create it
+# now too so file ownership below resolves.
+systemd-sysusers
 
 systemctl enable NetworkManager.service magic-installer-backend.service magic-installer-ui.service var-tmp.mount
 systemctl set-default graphical.target

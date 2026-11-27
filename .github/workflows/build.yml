@@ -228,6 +228,8 @@ jobs:
             systemctl is-enabled magic-apps.timer
             test -x /usr/libexec/magic-os/firstboot
             ls /usr/lib/modules/*/initramfs.img
+            # The initramfs must be able to set up the ostree root.
+            lsinitrd /usr/lib/modules/*/initramfs.img | grep -q ostree-prepare-root
           '
 
       - name: Generate Build Tags
