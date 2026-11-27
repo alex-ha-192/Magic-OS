@@ -78,7 +78,9 @@ jobs:
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
-          sudo apt-get update -q
+          # Third-party apt repos on the runner sometimes fail; we only need Ubuntu's.
+          sudo rm -f /etc/apt/sources.list.d/microsoft* /etc/apt/sources.list.d/*azure* || true
+          sudo apt-get update -q || sudo apt-get update -q || true
           sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf swtpm swtpm-tools mtools dosfstools python3-pil
 
       - name: End-to-end test in a VM
