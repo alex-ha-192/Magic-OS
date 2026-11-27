@@ -1,0 +1,14 @@
+[Unit]
+Description=Finish setting up Magic
+ConditionPathExists=/var/lib/magic-os/setup.json
+After=basic.target
+Before=display-manager.service systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/magic-os/firstboot
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

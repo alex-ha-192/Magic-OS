@@ -1,0 +1,7 @@
+# Magic OS installer: a small Fedora system that boots straight into the
+# Magic installer (no desktop). Turned into an ISO by Titanoboa.
+# SPDX-License-Identifier: GPL-3.0-or-later
+FROM quay.io/fedora/fedora-bootc:44
+COPY files/ /
+COPY build.sh iso.yaml /tmp/build/
+RUN --mount=type=cache,dst=/var/cache/libdnf5 bash /tmp/build/build.sh && rm -rf /tmp/build

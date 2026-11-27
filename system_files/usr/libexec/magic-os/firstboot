@@ -1,0 +1,62 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Runs once, on the first start after installing, before the sign-in screen.
+# Applies what the person chose in the installer, then deletes the setup file.
+set -euo pipefail
+S=/var/lib/magic-os/setup.json
+[[ -f "$S" ]] || exit 0
+
+say() { echo "magic-firstboot: $*"; echo "magic-firstboot: $*" > /dev/kmsg 2>/dev/null || true; }
+j() { jq -r "$1 // empty" "$S"; }
+
+# Files written by the installer have no SELinux labels yet.
+restorecon -RF /var/lib/magic-os /var/lib/flatpak /var/home 2>/dev/null || true
+
+user=$(j .user.username)
+full=$(j .user.full_name)
+hash=$(j .user.password_hash)
+if [[ -n "$user" ]]; then
+    id "$user" &>/dev/null || useradd -m -c "$full" -G wheel "$user"
+    [[ -n "$hash" ]] && usermod -p "$hash" "$user"
+fi
+
+h=$(j .hostname); ph=$(j .pretty_hostname)
+[[ -n "$h" ]] && hostnamectl set-hostname --static "$h" || true
+[[ -n "$ph" ]] && hostnamectl set-hostname --pretty "$ph" || true
+
+tz=$(j .timezone)
+[[ -n "$tz" && -f "/usr/share/zoneinfo/$tz" ]] && timedatectl set-timezone "$tz" || true
+
+loc=$(j .locale)
+[[ -n "$loc" ]] && localectl set-locale "LANG=$loc" || true
+
+kl=$(j .keyboard.layout); kv=$(j .keyboard.variant)
+[[ -n "$kl" ]] && localectl set-x11-keymap "$kl" "" "$kv" || true
+
+if [[ -n "$user" ]]; then
+    home=$(getent passwd "$user" | cut -d: -f6)
+    mkdir -p "$home/.config"
+    case "$(j .accent)" in
+        magenta) rgb="196,18,95" ;;
+        teal)    rgb="15,118,110" ;;
+        blue)    rgb="29,95,196" ;;
+        violet)  rgb="109,63,192" ;;
+        green)   rgb="21,128,61" ;;
+        *)       rgb="194,65,12" ;;
+    esac
+    cat > "$home/.config/kdeglobals" <<EOF
+[General]
+AccentColor=$rgb
+accentColorFromWallpaper=false
+EOF
+    # 12- or 24-hour clock. Only English needs a nudge; other languages keep their own convention.
+    if [[ "$loc" == en_* ]]; then
+        if [[ "$(j .clock)" == "12" ]]; then lct=en_US.UTF-8; else lct=en_GB.UTF-8; fi
+        printf '[Formats]\nLANG=%s\nLC_TIME=%s\n' "$loc" "$lct" > "$home/.config/plasma-localerc"
+    fi
+    chown -R "$user:$user" "$home/.config"
+    restorecon -RF "$home" 2>/dev/null || true
+fi
+
+rm -f "$S"
+say "MAGIC-FIRSTBOOT-OK"

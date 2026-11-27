@@ -15,7 +15,13 @@
 | Version | Build date `YYYY-MM-DD`, `-2`, `-3` for extra same-day releases | Requested. Tag and GitHub Release per version. |
 | Apps | Flathub only; Vivaldi default, Firefox alternative | Flatpaks update on their own timer, away from the OS image. |
 | Look | `org.magicos.ember` look-and-feel, `MagicEmber` colours, Open Sans | Matches the mockups. |
-| Filesystem | btrfs | Cheap snapshots for "see earlier versions" later. |
+| Filesystem | btrfs (subvolume `root`) inside LUKS2; separate ext4 `/boot`; ESP shared with Windows when dual-booting | Cheap snapshots later; GRUB can read `/boot`. |
+| Installer | Network installer ISO (Titanoboa). Kiosk: cage + Firefox showing a local web UI; Python backend runs `bootc install to-filesystem` | Reuses the mockups' HTML/CSS directly, so it looks like Magic. Small ISO; always installs the newest release. |
+| Encryption | LUKS2. TPM2 bound to PCR 7 (Secure Boot state) via systemd-cryptenroll, or a start-up password. Recovery key: 36 digits, accepted with or without dashes | Matches the Protect mockup. |
+| Dual boot | Shrink the largest NTFS partition (refuses with BitLocker on or Fast Startup/hibernation), add `/boot` + LUKS root in the gap, GRUB menu entry for Windows, Magic first in firmware boot order | |
+| First boot | `magic-firstboot.service` reads `/var/lib/magic-os/setup.json` (written by the installer), creates the user, sets hostname, time zone, language, keyboard, accent, then deletes the file | Keeps /etc changes out of the installer. |
+| Apps | Installed from Flathub during install; anything that fails is retried hourly by `magic-apps.timer` | |
+| Release gate | New version pushed under its date tag; `latest` moves only after the installer VM test passes | Nothing untested reaches installed computers. |
 
 ## Not verified yet (nothing has been built or booted)
 
@@ -24,7 +30,7 @@
 3. Vivaldi from Flathub (`com.vivaldi.Vivaldi`): exists, plays Netflix/Prime (Widevine), works with Google Docs, can start with a simple layout.
 4. `flatpak-preinstall` installs the default apps on a fresh install without network trouble.
 5. TPM2 + Secure Boot auto-unlock on a custom image: Secure Boot signing and key enrolment for our own kernel/shim chain, and re-binding after firmware updates.
-6. Installer. The template's Anaconda ISO is only a stopgap. We need a friendly front end for: language, name, time zone, sign-in password, encryption + recovery key, next-to-Windows or whole disk, and software choice.
+6. Installer on real hardware: Wi-Fi chips and firmware, HiDPI screens, real Windows installs (NTFS shrink, shared ESP, GRUB Windows entry). CI covers whole-disk install with TPM unlock in a VM only.
 7. Windows disk in Files: read-only by default, safe with Fast Startup/hibernation, BitLocker detection.
 8. `bootc-image-builder` was merged into `image-builder` (June 2026); the workflows still use the old action.
 9. Whether a failed first CI run is only the `ARG` bug (fixed) or hides more.

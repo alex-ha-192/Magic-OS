@@ -1,0 +1,9 @@
+[Unit]
+Description=Retry installing your apps until they are all in
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target

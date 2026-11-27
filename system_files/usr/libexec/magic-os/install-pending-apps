@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Installs any apps the installer could not finish (for example, the network dropped).
+set -uo pipefail
+P=/var/lib/magic-os/apps.pending
+[[ -s "$P" ]] || exit 0
+flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || exit 1
+left=()
+while read -r app; do
+    [[ -z "$app" ]] && continue
+    flatpak info --system "$app" &>/dev/null && continue
+    flatpak install --system --noninteractive -y flathub "$app" || left+=("$app")
+done < "$P"
+printf '%s\n' "${left[@]}" | sed '/^$/d' > "$P"
+[[ -s "$P" ]] || rm -f "$P"

@@ -45,6 +45,8 @@ jobs:
       proceed: ${{ steps.g.outputs.proceed }}
       publish: ${{ steps.g.outputs.publish }}
       version: ${{ steps.g.outputs.version }}
+      push_tag: ${{ steps.g.outputs.push_tag }}
+      test_ref: ${{ steps.g.outputs.test_ref }}
     steps:
       - id: g
         env:
@@ -81,8 +83,16 @@ jobs:
             workflow_dispatch)
               [[ "$PUBLISH_INPUT" == "true" && "$ON_DEFAULT_BRANCH" == "true" ]] && publish=true ;;
           esac
-          echo "proceed=$proceed publish=$publish version=$version"
-          { echo "proceed=$proceed"; echo "publish=$publish"; echo "version=$version"; } >> "$GITHUB_OUTPUT"
+          # Which tag to push this build under, so the installer test can install it.
+          # Releases: the version. Other runs on main: a throwaway ci-<run> tag
+          # (pruned at the next release). Pull requests: nothing; test "latest".
+          push_tag=""
+          if [[ "$publish" == "true" ]]; then push_tag="$version"
+          elif [[ "$proceed" == "true" && "$EVENT" != "pull_request" && "$ON_DEFAULT_BRANCH" == "true" ]]; then push_tag="ci-${GITHUB_RUN_ID}"; fi
+          repo="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/magic-os"
+          test_ref="${repo}:${push_tag:-latest}"
+          echo "proceed=$proceed publish=$publish version=$version push_tag=$push_tag test_ref=$test_ref"
+          { echo "proceed=$proceed"; echo "publish=$publish"; echo "version=$version"; echo "push_tag=$push_tag"; echo "test_ref=$test_ref"; } >> "$GITHUB_OUTPUT"
 
   # Fast checks. If any fails, nothing is built or published.
   checks:
@@ -103,6 +113,21 @@ jobs:
         run: |
           node --check system_files/usr/share/plasma/look-and-feel/org.magicos.ember/contents/layouts/org.kde.plasma.desktop-layout.js
           python3 -c "import json,sys; json.load(open('system_files/usr/share/plasma/look-and-feel/org.magicos.ember/metadata.json'))"
+      - name: Installer code
+        run: |
+          python3 -m py_compile installer/files/usr/libexec/magic-installer/*.py tests/qmp.py
+          node --check installer/files/usr/share/magic-installer/ui/app.js
+          bash -n installer/build.sh tests/e2e-vm.sh system_files/usr/libexec/magic-os/*
+          python3 -c "import json; json.load(open('installer/files/usr/lib64/firefox/distribution/policies.json'))"
+      - name: Every app the installer offers exists on Flathub
+        run: |
+          ids=$(python3 -c "import ast,sys; t=open('installer/files/usr/libexec/magic-installer/server.py').read(); s=t.index('APPS = {'); e=t.index('}', s); print(' '.join(ast.literal_eval(t[s+7:e+1]).values()))")
+          bad=0
+          for id in $ids; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://flathub.org/api/v2/appstream/$id")
+            echo "$id $code"; [[ "$code" == "200" ]] || bad=1
+          done
+          exit $bad
       - name: Upstream submodule is present
         run: test -f upstream/aurora/build_scripts/base/19-initramfs.sh
 
@@ -199,6 +224,9 @@ jobs:
             test -f /usr/share/color-schemes/MagicEmber.colors
             systemctl is-enabled rpm-ostreed-automatic.timer
             systemctl is-enabled magic-flatpak-update.timer
+            systemctl is-enabled magic-firstboot.service
+            systemctl is-enabled magic-apps.timer
+            test -x /usr/libexec/magic-os/firstboot
             ls /usr/lib/modules/*/initramfs.img
           '
 
@@ -227,26 +255,23 @@ jobs:
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
       - name: Login to GitHub Container Registry
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        if: needs.gate.outputs.publish == 'true'
+        if: needs.gate.outputs.push_tag != ''
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Push under the version tag only. "latest" (what installed computers follow)
+      # moves later, in the promote job, after the installer test passes.
       - name: Push To GHCR
-        if: needs.gate.outputs.publish == 'true'
+        if: needs.gate.outputs.push_tag != ''
         id: push-image
         env:
-          ALIAS_TAGS: ${{ steps.gen-build-tags.outputs.alias_tags }}
+          PUSH_TAG: ${{ needs.gate.outputs.push_tag }}
         run: |
           set -euox pipefail
-          for tag in ${ALIAS_TAGS}; do
-            podman push --digestfile=/tmp/digestfile ${IMAGE_NAME}:${tag} ${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}
-          done
-
-          digest=$(< /tmp/digestfile)
-
-          echo "digest=${digest}" >> $GITHUB_OUTPUT
+          podman push --digestfile=/tmp/digestfile "${IMAGE_NAME}:${DEFAULT_TAG}" "${IMAGE_REGISTRY}/${IMAGE_NAME}:${PUSH_TAG}"
+          echo "digest=$(< /tmp/digestfile)" >> $GITHUB_OUTPUT
 
       # This section is optional and only needs to be enabled if you plan on distributing
       # your project for others to consume. You will need to create a public and private key
@@ -272,15 +297,51 @@ jobs:
           # use old bundle format, so we can use newer cosign 3.X.X instead of 2.X.X
           cosign sign -y --new-bundle-format=false --use-signing-config=false --key env://COSIGN_PRIVATE_KEY ${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}
 
+  # Build the installer ISO and test it end to end: install this new version in
+  # a VM, boot it, check first-boot setup. Pushes and PRs test against "latest".
+  installer:
+    name: Installer
+    needs: [gate, build_push]
+    if: needs.gate.outputs.proceed == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/installer.yml
+    with:
+      image_ref: ${{ needs.gate.outputs.test_ref }}
+      keep_iso: ${{ needs.gate.outputs.publish == 'true' }}
+
+  # Only now does the new version reach people: move "latest", create the
+  # release, attach MagicOS.iso, and prune old images.
+  promote:
+    name: Release
+    needs: [gate, build_push, installer]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    env:
+      MAGIC_VERSION: ${{ needs.gate.outputs.version }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/magic-os
+      IMAGE_NAME: magic-os
+      HAS_KEY: ${{ secrets.SIGNING_SECRET != '' }}
+    steps:
+      - name: Move "latest" to the new version
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "$TOKEN" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+          skopeo copy --all --preserve-digests "docker://${IMAGE}:${MAGIC_VERSION}" "docker://${IMAGE}:latest"
+
       # The release is the record of what shipped. The gate reads these to decide
       # whether this week's release is done, and to number same-day releases.
       - name: Create release
-        if: needs.gate.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           signed="unsigned"; [[ "${HAS_KEY}" == "true" ]] && signed="signed"
-          notes="Image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${MAGIC_VERSION} (${signed}). Built from ${GITHUB_SHA}."
+          notes="Image: ${IMAGE}:${MAGIC_VERSION} (${signed}). Built from ${GITHUB_SHA}. Installer tested in a VM before release."
           for attempt in 1 2 3; do
             if gh api -X POST "repos/${GITHUB_REPOSITORY}/releases" \
                  -f tag_name="${MAGIC_VERSION}" -f target_commitish="${GITHUB_SHA}" \
@@ -294,43 +355,56 @@ jobs:
           done
           exit 1
 
+      - name: Download the tested ISO
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: magic-iso
+          path: iso
+
+      # Fixed name, so this always works:
+      #   https://github.com/<owner>/<repo>/releases/latest/download/MagicOS.iso
+      # GitHub allows 2 GiB per release file; a bigger ISO is split into parts.
+      - name: Attach MagicOS.iso to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd iso
+          sha256sum MagicOS.iso > MagicOS.iso.sha256
+          size=$(stat -c %s MagicOS.iso); echo "ISO size: $size bytes"
+          if [[ "$size" -lt 2147483648 ]]; then
+            gh release upload "$MAGIC_VERSION" MagicOS.iso MagicOS.iso.sha256 --clobber -R "$GITHUB_REPOSITORY"
+            note="Installer: [MagicOS.iso](https://github.com/${GITHUB_REPOSITORY}/releases/download/${MAGIC_VERSION}/MagicOS.iso). Needs an internet connection (Wi-Fi or cable) to install."
+          else
+            split -b 1900M -d -a 3 --numeric-suffixes=1 MagicOS.iso MagicOS.iso.
+            rm MagicOS.iso
+            gh release upload "$MAGIC_VERSION" MagicOS.iso.[0-9]* MagicOS.iso.sha256 --clobber -R "$GITHUB_REPOSITORY"
+            note="Installer is split in parts (GitHub's 2 GiB limit). Download all MagicOS.iso.NNN files, then run: cat MagicOS.iso.* > MagicOS.iso"
+          fi
+          body=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${MAGIC_VERSION}" --jq .body)
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${MAGIC_VERSION}" --jq .id)
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${id}" -f body="${body}"$'\n\n'"${note}" >/dev/null
+
       # Keep the newest release image and the three before it, so people can go
       # back. Anything older is deleted. A failure here never fails the release.
       - name: Prune old images
-        if: needs.gate.outputs.publish == 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          keep_tags=$(gh release list -R "$GITHUB_REPOSITORY" --limit 4 --json tagName -q '.[].tagName')
+          keep_tags=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=4" --jq '.[].tag_name')
           keep_tags=$(printf '%s\nlatest\n' "$keep_tags")
           api="users/${GITHUB_REPOSITORY_OWNER}/packages/container/${IMAGE_NAME}/versions"
           versions=$(gh api --paginate "$api")
-          # versions to keep: carry latest or one of the last four release tags
           keep_digests=$(jq -r --arg keep "$keep_tags" '
             ($keep | split("\n")) as $k
             | .[] | select((.metadata.container.tags // []) | any(. as $t | $k | index($t))) | .name' <<<"$versions")
           jq -c '.[] | select((.metadata.container.tags // []) | length > 0) | {id, name, tags: .metadata.container.tags}' <<<"$versions" | while read -r v; do
             id=$(jq -r .id <<<"$v"); name=$(jq -r .name <<<"$v")
             grep -qx "$name" <<<"$keep_digests" && continue
-            # keep signature/attestation tags that belong to a kept image
             sigfor=$(jq -r '.tags[] | select(test("^sha256-[0-9a-f]+\\.(sig|att)$")) | sub("^sha256-";"sha256:") | sub("\\.(sig|att)$";"")' <<<"$v" | head -1)
             if [[ -n "$sigfor" ]] && grep -qx "$sigfor" <<<"$keep_digests"; then continue; fi
             echo "Deleting $(jq -c .tags <<<"$v")"
             gh api -X DELETE "${api}/${id}" || true
           done
-
-  # Every release also gets an installer ISO, attached as MagicOS.iso.
-  iso:
-    name: Installer ISO
-    needs: [gate, build_push]
-    if: needs.gate.outputs.publish == 'true'
-    permissions:
-      contents: write
-      packages: read
-      id-token: write
-    uses: ./.github/workflows/build-disk.yml
-    with:
-      platform: amd64
-      release_tag: ${{ needs.gate.outputs.version }}

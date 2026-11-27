@@ -1,0 +1,11 @@
+label: "MagicOS-Installer"
+grub2:
+  default: 0
+  timeout: 3
+  entries:
+    - name: "Install Magic OS"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0"
+      initrd: "/images/pxeboot/initrd.img"
+    - name: "Install Magic OS (basic graphics)"
+      linux: "/images/pxeboot/vmlinuz quiet rhgb root=live:CDLABEL=MagicOS-Installer rd.live.image enforcing=0 nomodeset"
+      initrd: "/images/pxeboot/initrd.img"

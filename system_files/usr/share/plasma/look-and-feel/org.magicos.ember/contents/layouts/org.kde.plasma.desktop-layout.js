@@ -20,12 +20,19 @@ panel.addWidget("org.kde.plasma.pager");
 
 var tasks = panel.addWidget("org.kde.plasma.taskmanager");
 tasks.currentConfigGroup = ["General"];
-tasks.writeConfig("launchers", [
-    "applications:com.vivaldi.Vivaldi.desktop",
-    "preferred://filemanager",
-    "applications:org.kde.discover.desktop",
-    "applications:systemsettings.desktop"
-].join(","));
+// Pin whichever browser the installer put on (Vivaldi or Firefox).
+var launchers = [];
+var browsers = ["com.vivaldi.Vivaldi", "org.mozilla.firefox", "firefox"];
+for (var b = 0; b < browsers.length; b++) {
+    if (applicationExists(browsers[b] + ".desktop")) {
+        launchers.push("applications:" + browsers[b] + ".desktop");
+        break;
+    }
+}
+launchers.push("preferred://filemanager");
+launchers.push("applications:org.kde.discover.desktop");
+launchers.push("applications:systemsettings.desktop");
+tasks.writeConfig("launchers", launchers.join(","));
 tasks.writeConfig("showToolTips", "true");
 tasks.writeConfig("groupingStrategy", "0"); // never group: one button per window, like Windows
 

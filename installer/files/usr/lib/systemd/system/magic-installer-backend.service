@@ -1,0 +1,12 @@
+[Unit]
+Description=Magic installer (backend)
+After=network.target NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+ExecStart=/usr/libexec/magic-installer/server.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target

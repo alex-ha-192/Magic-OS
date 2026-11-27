@@ -1,0 +1,10 @@
+[Unit]
+Description=Finish installing your apps
+ConditionPathExists=/var/lib/magic-os/apps.pending
+After=network-online.target magic-firstboot.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/magic-os/install-pending-apps
+Nice=10
