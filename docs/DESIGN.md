@@ -14,7 +14,7 @@
 | Upstream Aurora | Git submodule (`upstream/aurora`), bumped weekly by Dependabot | Upstream fixes arrive as reviewed bumps instead of manual copies. |
 | Version | Build date `YYYY-MM-DD`, `-2`, `-3` for extra same-day releases | Requested. Tag and GitHub Release per version. |
 | Apps | Flathub only; Vivaldi default, Firefox alternative | Flatpaks update on their own timer, away from the OS image. |
-| Look | `org.magicos.ember` look-and-feel, `MagicEmber` colours, Open Sans | Matches the mockups. |
+| Look | `org.magicos.desktop` look-and-feel, `MagicEmber` colours, Open Sans | Matches the mockups. |
 | Filesystem | btrfs (subvolume `root`) inside LUKS2; separate ext4 `/boot`; ESP shared with Windows when dual-booting | Cheap snapshots later; GRUB can read `/boot`. |
 | Installer | Network installer ISO (Titanoboa). Kiosk: cage + Firefox showing a local web UI; Python backend runs `bootc install to-filesystem` | Reuses the mockups' HTML/CSS directly, so it looks like Magic. Small ISO; always installs the newest release. |
 | Encryption | LUKS2. TPM2 bound to PCR 7 (Secure Boot state) via systemd-cryptenroll, or a start-up password. Recovery key: 36 digits, accepted with or without dashes | Matches the Protect mockup. |

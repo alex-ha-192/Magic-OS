@@ -111,8 +111,8 @@ jobs:
           shellcheck -S warning build_files/build.sh build_files/steps/*.sh system_files/usr/bin/magic-*
       - name: Plasma layout script and metadata
         run: |
-          node --check system_files/usr/share/plasma/look-and-feel/org.magicos.ember/contents/layouts/org.kde.plasma.desktop-layout.js
-          python3 -c "import json,sys; json.load(open('system_files/usr/share/plasma/look-and-feel/org.magicos.ember/metadata.json'))"
+          node --check system_files/usr/share/plasma/look-and-feel/org.magicos.desktop/contents/layouts/org.kde.plasma.desktop-layout.js
+          python3 -c "import json,sys; json.load(open('system_files/usr/share/plasma/look-and-feel/org.magicos.desktop/metadata.json'))"
       - name: Installer code
         run: |
           python3 -m py_compile installer/files/usr/libexec/magic-installer/*.py tests/qmp.py system_files/usr/share/magic-settings/magic_settings.py tools/gen-theme.py
@@ -220,7 +220,7 @@ jobs:
             grep -q "AutomaticUpdatePolicy=stage" /etc/rpm-ostreed.conf
             test -x /usr/bin/magic-rollback
             test -x /usr/bin/magic-update-status
-            test -f /usr/share/plasma/look-and-feel/org.magicos.ember/metadata.json
+            test -f /usr/share/plasma/look-and-feel/org.magicos.desktop/metadata.json
             test -f /usr/share/color-schemes/MagicEmber.colors
             systemctl is-enabled rpm-ostreed-automatic.timer
             systemctl is-enabled magic-flatpak-update.timer
