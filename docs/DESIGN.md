@@ -5,7 +5,7 @@
 | Topic | Decision | Why |
 |-------|----------|-----|
 | Base | `ghcr.io/ublue-os/kinoite-main:44` | Plain KDE from ublue: signed kernel, codecs, flatpak setup. Aurora's extras left out. 44 is ublue's "gts" tag, one behind the newest. |
-| Updates | `rpm-ostreed-automatic` with `AutomaticUpdatePolicy=stage`, daily | Downloads and stages silently. No automatic reboot. |
+| Updates | `magic-update.timer` (daily): finds the newest release (registry `latest` digest -> date tag), `rpm-ostree upgrade` stages it; skips a version you went back from. rpm-ostree's own automatic updates are off. | Silent, no automatic reboot, rollback isn't undone the next day. |
 | Restart gating | Comes with ostree: a staged update is applied on any reboot or shutdown | "Update and restart" and "update and shut down" are the only paths, as designed. The tray indicator reads `magic-update-status`. |
 | Rollback | `magic-rollback` (`rpm-ostree rollback`) | The only update control shown to the user. |
 | Build cadence | Catch-up check every 3h; releases once per week after Saturday 12:00 UK time, only if all checks pass | A late or dropped GitHub run cannot skip a week; nothing broken ships. |

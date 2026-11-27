@@ -2,7 +2,8 @@
 
 A calm, stable KDE Plasma desktop for people who are used to Windows.
 
-- **Looks familiar:** classic taskbar, Start button on the left, Windows 10 style Start menu, an original dark charcoal and orange look ("Ember") with a customisable accent colour.
+- **Looks familiar:** classic taskbar, Start button on the left, a Windows 10 style Start menu in a Zune/Metro look (thin lowercase headings, square tiles), dark charcoal with a lime accent you can change (six colours).
+- **Simple settings:** Magic Settings covers what most people change (Wi-Fi, Bluetooth, display, sound, colours, updates and going back, apps, account, time, power, printers). KDE's full settings stay available as Advanced Settings. Apps come from the App Store (Discover, Flathub only).
 - **Updates itself:** new versions download quietly in the background. Magic never restarts on its own. Any restart or shutdown installs the waiting update.
 - **Easy to undo:** if something is wrong, go back to the previous version. Files and settings are untouched.
 - **Encrypted by default:** full-disk encryption, unlocked by the TPM with Secure Boot, with a recovery key.
@@ -27,7 +28,8 @@ Early. Every release is installed and booted in a VM by CI before it goes out (s
 |------|--------------|
 | `Containerfile` | Starts from `ghcr.io/ublue-os/kinoite-main:44`, runs `build_files/build.sh` |
 | `build_files/steps/` | Numbered steps: copy files, packages, identity, services, initramfs, cleanup |
-| `system_files/` | Copied onto `/`: update policy, presets, Plasma look-and-feel, colour scheme, app list |
+| `system_files/` | Copied onto `/`: update service, presets, look-and-feel `org.magicos.desktop`, colour schemes and wallpapers (from `tools/gen-theme.py`), Magic Settings (`usr/share/magic-settings`), Start menu (`usr/share/plasma/plasmoids/org.magicos.start`), boot screen |
+| `tools/gen-theme.py` | Regenerates the six accent colour schemes, wallpapers and system `kdeglobals` |
 | `upstream/aurora` | Git submodule: pinned Aurora, source of a few reused files and scripts |
 | `.github/workflows/build.yml` | Checks, build, smoke test; releases **Saturdays 12:00 UK time**, signed with cosign |
 | `installer/` | The installer: a small Fedora live system (`Containerfile`) that boots into the Magic installer UI (`files/usr/share/magic-installer/ui`) and engine (`files/usr/libexec/magic-installer`) |
