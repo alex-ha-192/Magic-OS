@@ -445,13 +445,24 @@ def _rx_bytes():
     return total
 
 
-def _image_download_size(image):
+def _authfile(cfg):
+    """Registry login, only used by automated tests while the image is private."""
+    auth = cfg.get("registry_auth")
+    if not auth:
+        return []
+    import base64
+    tok = base64.b64encode(f"{auth['user']}:{auth['token']}".encode()).decode()
+    path = _write_secret("auth.json", json.dumps({"auths": {"ghcr.io": {"auth": tok}}}))
+    return ["--authfile", path]
+
+
+def _image_download_size(image, authargs=()):
     try:
-        raw = json.loads(run(["skopeo", "inspect", "--raw", "docker://" + image], quiet=True).stdout)
+        raw = json.loads(run(["skopeo", "inspect", *authargs, "--raw", "docker://" + image], quiet=True).stdout)
         if "manifests" in raw:
             m = next(m for m in raw["manifests"] if m.get("platform", {}).get("architecture") == "amd64")
             repo = image.rsplit(":", 1)[0] if "@" not in image else image.split("@")[0]
-            raw = json.loads(run(["skopeo", "inspect", "--raw", f"docker://{repo}@{m['digest']}"], quiet=True).stdout)
+            raw = json.loads(run(["skopeo", "inspect", *authargs, "--raw", f"docker://{repo}@{m['digest']}"], quiet=True).stdout)
         return sum(l.get("size", 0) for l in raw.get("layers", []))
     except Exception as e:  # progress is cosmetic
         log(f"could not size image: {e}")
@@ -467,7 +478,8 @@ def download_and_install(cfg, prog, kargs):
     podman = ["podman", "--root", storage, "--runroot", RUN_DIR + "/podman"]
 
     prog.set("Downloading Magic", 18)
-    total = _image_download_size(image)
+    authargs = _authfile(cfg)
+    total = _image_download_size(image, authargs)
     start = _rx_bytes()
     done = threading.Event()
 
@@ -482,7 +494,7 @@ def download_and_install(cfg, prog, kargs):
     try:
         for attempt in range(3):
             try:
-                stream(podman + ["pull", "--retry", "3", image])
+                stream(podman + ["pull", "--retry", "3", *authargs, image])
                 break
             except InstallError:
                 if attempt == 2:

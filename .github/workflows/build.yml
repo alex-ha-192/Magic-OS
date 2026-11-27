@@ -305,6 +305,7 @@ jobs:
     if: needs.gate.outputs.proceed == 'true'
     permissions:
       contents: read
+      packages: read
     uses: ./.github/workflows/installer.yml
     with:
       image_ref: ${{ needs.gate.outputs.test_ref }}

@@ -207,6 +207,7 @@ def build_config(ui):
         "accent": ui.get("accent") if ui.get("accent") in ACCENTS else "ember",
         "apps": apps,
         "extra_kargs": ui.get("extra_kargs", []),
+        "registry_auth": ui.get("registry_auth"),
     }
     if enc == "password" and len(cfg["startup_password"]) < 4:
         raise mi.InstallError("Choose a start-up password of at least 4 characters.")

@@ -33,6 +33,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   iso:
@@ -83,6 +84,8 @@ jobs:
       - name: End-to-end test in a VM
         env:
           IMAGE_REF: ${{ inputs.image_ref || 'ghcr.io/alex-ha-192/magic-os:latest' }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
         run: tests/e2e-vm.sh output/MagicOS.iso "$IMAGE_REF" test-output
 
       - name: Upload test logs and screenshots

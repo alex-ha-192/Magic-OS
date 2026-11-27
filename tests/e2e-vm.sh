@@ -26,6 +26,15 @@ cat > "$WORK/autoinstall.json" <<JSON
   "extra_kargs": ["console=tty0", "console=ttyS0,115200", "systemd.show_status=1"]
 }
 JSON
+# While the image package is private, let the test VM log in (short-lived CI token).
+if [[ -n "${REGISTRY_TOKEN:-}" ]]; then
+    python3 - "$WORK/autoinstall.json" <<PY
+import json, os, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["registry_auth"] = {"user": os.environ.get("REGISTRY_USER", "ci"), "token": os.environ["REGISTRY_TOKEN"]}
+json.dump(d, open(p, "w"))
+PY
+fi
 mkfs.fat -C -n MAGICAUTO "$WORK/auto.img" 2048 >/dev/null
 mcopy -i "$WORK/auto.img" "$WORK/autoinstall.json" ::
 
