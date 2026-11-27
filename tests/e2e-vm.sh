@@ -126,7 +126,7 @@ if (( ! ok )); then
     echo "::error::First boot did not finish"; exit 1
 fi
 # The installer made the account, so KDE's own setup wizard must not appear.
-if grep -aq "Plasma Setup - Out-of-Box" "$OUT/boot-serial.log" && grep -a "Plasma Setup - Out-of-Box" "$OUT/boot-serial.log" | grep -aq "Starting\|Started\|Finished"; then
+if grep -aE "(Starting|Started|Finished) plasma-setup\.service" "$OUT/boot-serial.log"; then
     echo "::error::KDE's first-run wizard ran instead of the sign-in screen"; exit 1
 fi
 echo "End-to-end test passed: installed, TPM unlocked, first-boot setup done."
