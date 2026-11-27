@@ -64,7 +64,11 @@ jobs:
           iso-dest: ${{ github.workspace }}/output/MagicOS.iso
 
       - name: ISO size
+        env:
+          ISO_DEST: ${{ steps.iso.outputs.iso-dest }}
         run: |
+          # Titanoboa resolves iso-dest relative to its own folder; bring it here.
+          [[ -f output/MagicOS.iso ]] || mv "$ISO_DEST" output/MagicOS.iso
           ls -la output/
           sudo podman rmi -f localhost/magic-installer:latest || true
           df -h /
@@ -74,7 +78,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
           sudo apt-get update -q
-          sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf swtpm swtpm-tools mtools dosfstools
+          sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf swtpm swtpm-tools mtools dosfstools python3-pil
 
       - name: End-to-end test in a VM
         env:

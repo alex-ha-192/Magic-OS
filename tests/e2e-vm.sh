@@ -44,6 +44,20 @@ QEMU=(qemu-system-x86_64 -enable-kvm -machine q35 -cpu host -smp 4 -m 6144
       -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0
       -vga virtio -display none)
 shot() { python3 "$HERE/qmp.py" "$1" screendump "$OUT/$2.png" >/dev/null 2>&1 || true; }
+# Print a small JPEG of a screenshot into the log, base64, between markers.
+logshot() {
+    [[ -f "$OUT/$1.png" ]] || return 0
+    python3 - "$OUT/$1.png" "$1" <<'PY' || true
+import base64, io, sys
+try:
+    from PIL import Image
+    im = Image.open(sys.argv[1]).convert("RGB"); im.thumbnail((960, 600))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=60); data = b.getvalue()
+except Exception:
+    data = open(sys.argv[1], "rb").read()
+print("SCREENSHOT-BEGIN " + sys.argv[2]); print(base64.b64encode(data).decode()); print("SCREENSHOT-END")
+PY
+}
 
 echo "::group::Phase 1: install from the ISO"
 start_tpm
@@ -62,7 +76,8 @@ if kill -0 $QPID 2>/dev/null; then
 fi
 wait $QPID || true
 echo "::endgroup::"
-grep -a "magic-installer" "$OUT/install-serial.log" | tail -40 || true
+logshot install-0150s; logshot install-0600s
+grep -a "magic-installer" "$OUT/install-serial.log" | tail -60 || true
 if ! grep -aq "MAGIC-INSTALL-OK" "$OUT/install-serial.log"; then
     echo "::error::Install failed"; exit 1
 fi
@@ -83,10 +98,10 @@ while (( SECONDS < 900 )); do
 done
 if (( ok )); then
     sleep 90   # let the sign-in screen come up
-    shot "$WORK/qmp2" "boot-signin-screen"
+    shot "$WORK/qmp2" "boot-signin-screen"; logshot boot-signin-screen
     grep -a -E "sddm|display-manager|Reached target.*[Gg]raphical" "$OUT/boot-serial.log" | tail -5 || true
 fi
-(( ok )) || shot "$WORK/qmp2" "boot-failed"
+(( ok )) || { shot "$WORK/qmp2" "boot-failed"; logshot boot-failed; logshot boot-passphrase-prompt; }
 python3 "$HERE/qmp.py" "$WORK/qmp2" quit >/dev/null 2>&1 || kill $QPID 2>/dev/null || true
 echo "::endgroup::"
 if (( ! ok )); then
