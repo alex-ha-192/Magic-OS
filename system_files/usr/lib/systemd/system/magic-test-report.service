@@ -1,0 +1,9 @@
+[Unit]
+Description=Report the desktop state for automated tests
+ConditionPathExists=/var/lib/magic-os/test-mode
+After=graphical.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/magic-os/test-report
+TimeoutStartSec=30min

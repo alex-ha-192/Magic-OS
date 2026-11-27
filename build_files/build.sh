@@ -4,7 +4,7 @@
 set -ouex pipefail
 
 CTX=/ctx/build_files
-for step in 10-system-files 15-upstream 20-packages 30-identity 40-services 50-initramfs 90-cleanup; do
+for step in 10-system-files 15-upstream 20-packages 30-identity 40-services 45-desktop 50-initramfs 90-cleanup; do
     echo "::group:: === ${step} ==="
     bash "${CTX}/steps/${step}.sh"
     echo "::endgroup::"

@@ -115,9 +115,9 @@ jobs:
           python3 -c "import json,sys; json.load(open('system_files/usr/share/plasma/look-and-feel/org.magicos.ember/metadata.json'))"
       - name: Installer code
         run: |
-          python3 -m py_compile installer/files/usr/libexec/magic-installer/*.py tests/qmp.py
+          python3 -m py_compile installer/files/usr/libexec/magic-installer/*.py tests/qmp.py system_files/usr/share/magic-settings/magic_settings.py tools/gen-theme.py
           node --check installer/files/usr/share/magic-installer/ui/app.js
-          bash -n installer/build.sh tests/e2e-vm.sh system_files/usr/libexec/magic-os/*
+          bash -n installer/build.sh tests/e2e-vm.sh system_files/usr/libexec/magic-os/* build_files/steps/*.sh
           python3 -c "import json; json.load(open('installer/files/usr/lib64/firefox/distribution/policies.json'))"
       - name: Every app the installer offers exists on Flathub
         run: |
@@ -227,6 +227,24 @@ jobs:
             systemctl is-enabled magic-firstboot.service
             systemctl is-enabled magic-apps.timer
             test -x /usr/libexec/magic-os/firstboot
+            # theming and Magic's own apps
+            for a in Lime Ember Magenta Teal Blue Violet; do
+              test -f /usr/share/color-schemes/Magic$a.colors
+              test -f /usr/share/wallpapers/Magic$a/contents/images/3840x2160.jpg
+            done
+            grep -q "^ColorScheme=MagicLime" /etc/xdg/kdeglobals
+            grep -q "^\[Colors:Window\]" /etc/xdg/kdeglobals
+            grep -q "^LookAndFeelPackage=org.magicos.desktop" /etc/xdg/kdeglobals
+            test -f /usr/share/plasma/look-and-feel/org.magicos.desktop/contents/layouts/org.kde.plasma.desktop-layout.js
+            test -f /usr/share/plasma/look-and-feel/org.magicos.desktop/contents/splash/Splash.qml
+            [[ "$(plymouth-set-default-theme)" == "magic" ]]
+            lsinitrd /usr/lib/modules/*/initramfs.img | grep -q "plymouth/themes/magic/magic.script"
+            QT_QPA_PLATFORM=offscreen MAGIC_SETTINGS_DEMO=1 timeout 120 /usr/bin/magic-settings --check
+            grep -q "^Name=Advanced Settings" /usr/share/applications/systemsettings.desktop
+            grep -q "^Name=App Store" /usr/share/applications/org.kde.discover.desktop
+            if rpm -q plasma-discover-rpm-ostree; then echo "Discover still has system updates"; exit 1; fi
+            systemctl is-enabled magic-update.timer
+            if systemctl is-enabled rpm-ostreed-automatic.timer; then echo "rpm-ostree automatic updates still on"; exit 1; fi
             ls /usr/lib/modules/*/initramfs.img
             # The initramfs must be able to set up the ostree root.
             lsinitrd /usr/lib/modules/*/initramfs.img | grep -q ostree-prepare-root

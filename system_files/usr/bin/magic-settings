@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+exec /usr/bin/python3 /usr/share/magic-settings/magic_settings.py "$@"

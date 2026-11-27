@@ -1,4 +1,5 @@
-enable rpm-ostreed-automatic.timer
+disable rpm-ostreed-automatic.timer
+enable magic-update.timer
 enable magic-flatpak-update.timer
 enable flatpak-add-flathub-repos.service
 enable flatpak-nuke-fedora.service

@@ -37,8 +37,13 @@ permissions:
 
 jobs:
   iso:
-    name: Build and test the installer ISO
+    name: Build and test the installer ISO (${{ matrix.unlock }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # tpm: automatic unlock. password: type a start-up password at boot.
+        unlock: [tpm, password]
     timeout-minutes: 180
     steps:
       - name: Checkout
@@ -92,19 +97,19 @@ jobs:
       - name: End-to-end test in a VM
         env:
           IMAGE_REF: ${{ inputs.image_ref || 'ghcr.io/alex-ha-192/magic-os:latest' }}
-        run: tests/e2e-vm.sh output/MagicOS.iso "$IMAGE_REF" test-output
+        run: tests/e2e-vm.sh output/MagicOS.iso "$IMAGE_REF" test-output "${{ matrix.unlock }}"
 
       - name: Upload test logs and screenshots
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: installer-test
+          name: installer-test-${{ matrix.unlock }}
           path: test-output/
           if-no-files-found: ignore
           retention-days: 14
 
       - name: Upload the ISO
-        if: inputs.keep_iso
+        if: inputs.keep_iso && matrix.unlock == 'tpm'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: magic-iso

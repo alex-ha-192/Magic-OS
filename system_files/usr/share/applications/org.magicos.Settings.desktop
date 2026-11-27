@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+GenericName=Settings
+Comment=Wi-Fi, display, sound, colours, updates and more
+Exec=magic-settings %u
+Icon=org.magicos.Settings
+Categories=Settings;System;
+Keywords=settings;preferences;control panel;wifi;bluetooth;display;sound;update;
+StartupNotify=true
+StartupWMClass=magic_settings.py

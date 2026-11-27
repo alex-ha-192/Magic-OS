@@ -6,12 +6,12 @@ const STEPS = ['get online', 'where you are', 'about you', 'how to install', 'pr
 const GB = 1024 ** 3;
 
 const ACCENTS = {
+  lime:    { ac: '#4d7c0f', at: '#bef264', wp: '#26390d', hover: '#3f6212' },
   ember:   { ac: '#c2410c', at: '#ff8a4c', wp: '#4b2412', hover: '#a8370a' },
   magenta: { ac: '#c4125f', at: '#ff5fa2', wp: '#4a1236', hover: '#a30f4f' },
   teal:    { ac: '#0f766e', at: '#5eead4', wp: '#0c3b3a', hover: '#0c5f59' },
   blue:    { ac: '#1d5fc4', at: '#7db3ff', wp: '#10305f', hover: '#174ea2' },
   violet:  { ac: '#6d3fc0', at: '#b79cff', wp: '#2d1a58', hover: '#5a33a0' },
-  green:   { ac: '#15803d', at: '#6ee7a1', wp: '#123d22', hover: '#116a33' },
 };
 
 // [locale, name, keyboard layout, keyboard variant, time zone, clock]
@@ -67,7 +67,7 @@ const RECOMMENDED = [['internet', 'Vivaldi'], ['documents, spreadsheets, slides'
 const DEFAULTS = {
   step: 0, locale: 'en_GB.UTF-8', kb_layout: 'gb', kb_variant: '', clock: '24', timezone: 'Europe/London', tz_query: '',
   tz_touched: false, full_name: '', computer_name: '', cn_touched: false, password: '', password2: '', username: '',
-  more: false, accent: 'ember', disk: '', mode: '', magic_size_gb: 0, erase_ok: false, encrypt: true, unlock: 'tpm',
+  more: false, accent: 'lime', disk: '', mode: '', magic_size_gb: 0, erase_ok: false, encrypt: true, unlock: 'tpm',
   startup_password: '', startup_password2: '', rk_saved: false, software: 'recommended', choosing: false,
   browser: 'vivaldi', office: 'libreoffice', email: 'thunderbird', extras: { vlc: true },
 };
@@ -96,7 +96,7 @@ const set = (patch, rerender = true) => { Object.assign(S, patch); save(); if (r
 const gb = (b) => Math.round(b / GB);
 
 function applyAccent() {
-  const a = ACCENTS[S.accent] || ACCENTS.ember, r = document.documentElement.style;
+  const a = ACCENTS[S.accent] || ACCENTS.lime, r = document.documentElement.style;
   r.setProperty('--ac', a.ac); r.setProperty('--at', a.at); r.setProperty('--wp', a.wp); r.setProperty('--ac-hover', a.hover);
 }
 

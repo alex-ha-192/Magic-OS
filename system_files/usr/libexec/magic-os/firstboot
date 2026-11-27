@@ -36,19 +36,25 @@ kl=$(j .keyboard.layout); kv=$(j .keyboard.variant)
 if [[ -n "$user" ]]; then
     home=$(getent passwd "$user" | cut -d: -f6)
     mkdir -p "$home/.config"
-    case "$(j .accent)" in
-        magenta) rgb="196,18,95" ;;
-        teal)    rgb="15,118,110" ;;
-        blue)    rgb="29,95,196" ;;
-        violet)  rgb="109,63,192" ;;
-        green)   rgb="21,128,61" ;;
-        *)       rgb="194,65,12" ;;
-    esac
-    cat > "$home/.config/kdeglobals" <<EOF
-[General]
-AccentColor=$rgb
-accentColorFromWallpaper=false
-EOF
+    # Accent: the full colour scheme for that accent, so every app uses it.
+    acc=$(j .accent)
+    name=$(jq -r --arg a "$acc" '.accents[$a].name // empty' /usr/share/magic-os/accents.json)
+    [[ -n "$name" ]] || { acc=$(jq -r .default /usr/share/magic-os/accents.json); name=$(jq -r --arg a "$acc" '.accents[$a].name' /usr/share/magic-os/accents.json); }
+    scheme="/usr/share/color-schemes/Magic${name}.colors"
+    {
+        printf '[General]\nColorScheme=Magic%s\nMagicAccent=%s\n\n' "$name" "$acc"
+        # every [Colors:*], [ColorEffects:*] and [WM] group from the scheme
+        awk '/^\[/{keep = ($0 ~ /^\[(Colors|ColorEffects|WM)/)} keep' "$scheme"
+    } > "$home/.config/kdeglobals"
+    wall="/usr/share/wallpapers/Magic${name}/contents/images/3840x2160.jpg"
+    printf '[Greeter]\nWallpaperPlugin=org.kde.image\n\n[Greeter][Wallpaper][org.kde.image][General]\nImage=file://%s\n' "$wall" > "$home/.config/kscreenlockerrc"
+    # Sign-in screen follows the accent of the person who installed Magic.
+    if [[ -d /usr/share/sddm/themes/breeze ]]; then
+        mkdir -p /etc/sddm.conf.d
+        printf '[Theme]\nCurrent=breeze\nCursorTheme=breeze_cursors\n' > /etc/sddm.conf.d/10-magic.conf
+        mkdir -p /var/lib/magic-os
+        cp -f "$wall" /var/lib/magic-os/signin.jpg
+    fi
     # Keyboard layout for Plasma (it keeps its own setting per person).
     if [[ -n "$kl" ]]; then
         printf '[Layout]\nUse=true\nLayoutList=%s\nVariantList=%s\n' "$kl" "$kv" > "$home/.config/kxkbrc"
@@ -72,6 +78,12 @@ fi
 
 # The installer already created the account, so skip KDE's own first-run wizard.
 touch /etc/plasma-setup-done
+
+# Automated tests: report the desktop state once someone has signed in.
+if [[ "$(j .test)" == "true" ]]; then
+    touch /var/lib/magic-os/test-mode
+    systemctl start --no-block magic-test-report.service || true
+fi
 
 rm -f "$S"
 say "MAGIC-FIRSTBOOT-OK"

@@ -567,7 +567,7 @@ def install_apps(cfg, prog, var_dir, deploy_dir=None):
 
 
 def write_first_boot(cfg, var_dir):
-    setup = {k: cfg.get(k) for k in ("hostname", "pretty_hostname", "timezone", "locale", "keyboard", "clock", "accent")}
+    setup = {k: cfg.get(k) for k in ("hostname", "pretty_hostname", "timezone", "locale", "keyboard", "clock", "accent", "test")}
     setup["user"] = {k: cfg["user"].get(k) for k in ("full_name", "username", "password_hash")}
     path = os.path.join(var_dir, "lib/magic-os/setup.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)

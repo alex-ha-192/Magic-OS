@@ -3,9 +3,11 @@
 # End-to-end test: boot the installer ISO in a VM with a TPM, install Magic
 # unattended (encrypted, TPM unlock), then boot the installed system and wait
 # for first-boot setup to finish. Screenshots and serial logs go to OUTDIR.
-#   e2e-vm.sh ISO IMAGE_REF OUTDIR
+#   e2e-vm.sh ISO IMAGE_REF OUTDIR [tpm|password]
+# Then it signs in and photographs the desktop, Start menu and Magic's apps.
 set -euo pipefail
-ISO=$(realpath "$1"); IMAGE=$2; OUT=$(realpath -m "$3")
+ISO=$(realpath "$1"); IMAGE=$2; OUT=$(realpath -m "$3"); UNLOCK=${4:-tpm}
+STARTUP_PW="magic-start"
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT"
 WORK=$(mktemp -d)
@@ -18,7 +20,7 @@ cat > "$WORK/autoinstall.json" <<JSON
   "image": "$IMAGE",
   "target_imgref": "ghcr.io/alex-ha-192/magic-os:latest",
   "disk": "auto", "mode": "erase",
-  "encryption": "tpm", "require_secure_boot": false,
+  "encryption": "$UNLOCK", "startup_password": "$STARTUP_PW", "require_secure_boot": false, "test_mode": true,
   "full_name": "Test User", "computer_name": "CI test machine", "password": "magic-test",
   "locale": "en_GB.UTF-8", "kb_layout": "gb", "kb_variant": "", "clock": "24",
   "timezone": "Europe/London", "accent": "teal",
@@ -98,25 +100,54 @@ if ! grep -aq "MAGIC-INSTALL-OK" "$OUT/install-serial.log"; then
     echo "::error::Install failed"; exit 1
 fi
 
-echo "::group::Phase 2: first boot of the installed system"
+echo "::group::Phase 2: first boot, sign in, look around"
 SECONDS=0
 start_tpm
 "${QEMU[@]}" -serial file:"$OUT/boot-serial.log" -qmp unix:"$WORK/qmp2",server,nowait &
 QPID=$!
-ok=0
+Q() { python3 "$HERE/qmp.py" "$WORK/qmp2" "$@" >/dev/null 2>&1 || true; }
+serial() { grep -aq "$1" "$OUT/boot-serial.log" 2>/dev/null; }
+ok=0; typed=0; booted_shot=0
 while (( SECONDS < 900 )); do
-    if grep -aq "MAGIC-FIRSTBOOT-OK" "$OUT/boot-serial.log" 2>/dev/null; then ok=1; break; fi
-    if grep -aqi "enter passphrase\|recovery key" "$OUT/boot-serial.log" 2>/dev/null; then
+    if serial "MAGIC-FIRSTBOOT-OK"; then ok=1; break; fi
+    if (( ! booted_shot && SECONDS > 12 )); then shot "$WORK/qmp2" "boot-splash"; booted_shot=1; fi
+    # Start-up password: the prompt is on the screen (Plymouth), so go by time.
+    if [[ "$UNLOCK" == "password" ]] && { (( typed == 0 && SECONDS > 30 )) || (( typed == 1 && SECONDS > 120 )); }; then
+        shot "$WORK/qmp2" "boot-password-prompt"
+        Q type "$STARTUP_PW"; sleep 1; shot "$WORK/qmp2" "boot-password-typed"; Q key ret; typed=$((typed + 1))
+    fi
+    if [[ "$UNLOCK" == "tpm" ]] && serial "Please enter passphrase\|Enter passphrase"; then
         sleep 20; shot "$WORK/qmp2" "boot-passphrase-prompt"; echo "::error::TPM did not unlock the disk"; break
     fi
     kill -0 $QPID 2>/dev/null || break
-    sleep 5
+    sleep 3
 done
+signed_in=0
 if (( ok )); then
-    sleep 90   # let the sign-in screen come up
-    shot "$WORK/qmp2" "boot-signin-screen"; logshot boot-signin-screen
-    grep -a -E "sddm|display-manager|Reached target.*[Gg]raphical" "$OUT/boot-serial.log" | tail -5 || true
+    sleep 75   # sign-in screen
+    shot "$WORK/qmp2" "signin-screen"
+    Q key shift; sleep 3
+    Q type "magic-test"; sleep 1; Q key ret
+    # The installed system prints a report once the desktop is up.
+    for _ in $(seq 160); do serial "MAGIC-REPORT-END" && { signed_in=1; break; }; sleep 5; done
+    shot "$WORK/qmp2" "desktop"
+    Q key meta_l; sleep 4; shot "$WORK/qmp2" "start-menu"; Q key esc; sleep 2
+    open_app() {   # $1 command, $2 screenshot name, $3 seconds to wait
+        Q key alt+f2; sleep 3; Q type "$1"; sleep 3; Q key ret; sleep "$3"
+        shot "$WORK/qmp2" "$2"; Q key alt+f4; sleep 3
+    }
+    open_app "magic-settings" "app-settings" 15
+    open_app "magic-settings updates" "app-settings-updates" 15
+    open_app "dolphin" "app-files" 12
+    open_app "plasma-discover" "app-store" 30
+    open_app "systemsettings" "app-advanced-settings" 15
+    Q key meta_l; sleep 4; Q type "sett"; sleep 3; shot "$WORK/qmp2" "start-search"; Q key esc
 fi
+echo "::endgroup::"
+echo "----- installed system report -----"
+sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$OUT/boot-serial.log" | tr -d '\r' | sed -n '/MAGIC-REPORT-BEGIN/,/MAGIC-REPORT-END/p'
+echo "-----"
+for n in boot-splash boot-password-prompt boot-password-typed signin-screen desktop start-menu start-search app-settings app-settings-updates app-files app-store app-advanced-settings; do logshot "$n"; done
 if (( ! ok )); then
     echo "----- last lines of the installed system's serial console -----"
     sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$OUT/boot-serial.log" | tr -d '\r' | grep -av '^\s*$' | tail -150 || true
@@ -124,7 +155,6 @@ if (( ! ok )); then
     shot "$WORK/qmp2" "boot-failed"; logshot boot-failed; logshot boot-passphrase-prompt
 fi
 python3 "$HERE/qmp.py" "$WORK/qmp2" quit >/dev/null 2>&1 || kill $QPID 2>/dev/null || true
-echo "::endgroup::"
 if (( ! ok )); then
     echo "::error::First boot did not finish"; exit 1
 fi
@@ -132,4 +162,14 @@ fi
 if grep -aE "(Starting|Started|Finished) plasma-setup\.service" "$OUT/boot-serial.log"; then
     echo "::error::KDE's first-run wizard ran instead of the sign-in screen"; exit 1
 fi
-echo "End-to-end test passed: installed, TPM unlocked, first-boot setup done."
+if (( ! signed_in )); then
+    echo "::error::Could not sign in to the desktop (no report from the installed system)"; exit 1
+fi
+report=$(sed -n '/MAGIC-REPORT-BEGIN/,/MAGIC-REPORT-END/p' "$OUT/boot-serial.log" | tr -d '\r')
+if ! grep -q "ColorScheme = Magic" <<<"$report"; then
+    echo "::error::Magic's colour scheme is not in effect on the desktop"; exit 1
+fi
+if ! grep -q "LookAndFeelPackage = org.magicos.desktop" <<<"$report"; then
+    echo "::error::Magic's desktop layout package is not in effect"; exit 1
+fi
+echo "End-to-end test passed ($UNLOCK): installed, unlocked, set up, signed in, Magic theme in effect."

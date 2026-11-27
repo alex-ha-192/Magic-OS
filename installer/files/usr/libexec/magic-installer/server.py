@@ -35,7 +35,7 @@ APPS = {
     "calibre": "com.calibre_ebook.calibre",
 }
 RECOMMENDED = ["vivaldi", "libreoffice", "thunderbird", "gwenview", "okular", "vlc"]
-ACCENTS = {"ember", "magenta", "teal", "blue", "violet", "green"}
+ACCENTS = {"lime", "ember", "magenta", "teal", "blue", "violet"}
 
 STATE = {
     "recovery_key": mi.new_recovery_key(),
@@ -226,10 +226,11 @@ def build_config(ui):
         "locale": ui.get("locale") or "en_GB.UTF-8",
         "keyboard": {"layout": ui.get("kb_layout") or "gb", "variant": ui.get("kb_variant") or ""},
         "clock": "12" if str(ui.get("clock")) == "12" else "24",
-        "accent": ui.get("accent") if ui.get("accent") in ACCENTS else "ember",
+        "accent": ui.get("accent") if ui.get("accent") in ACCENTS else "lime",
         "apps": apps,
         "extra_kargs": ui.get("extra_kargs", []),
         "registry_auth": ui.get("registry_auth"),
+        "test": bool(ui.get("test_mode")),
     }
     if enc == "password" and len(cfg["startup_password"]) < 4:
         raise mi.InstallError("Choose a start-up password of at least 4 characters.")

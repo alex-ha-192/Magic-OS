@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "Magic OS"
+      }
+    ],
+    "Id": "MagicBlue",
+    "License": "CC-BY-SA-4.0",
+    "Name": "Magic Blue"
+  }
+}

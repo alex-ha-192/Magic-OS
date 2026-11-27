@@ -1,0 +1,11 @@
+[Unit]
+Description=Get the newest Magic ready for the next restart
+After=network-online.target
+Wants=network-online.target
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/magic-os/update
+Nice=10
+IOSchedulingClass=idle

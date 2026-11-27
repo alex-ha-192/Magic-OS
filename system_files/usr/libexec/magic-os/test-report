@@ -1,0 +1,37 @@
+#!/usr/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Automated tests only (enabled when the installer ran in test mode): after the
+# desktop has loaded, print what is really in effect to the serial console.
+set -uo pipefail
+out=/dev/ttyS0
+[[ -w $out ]] || out=/dev/console
+user=$(awk -F: '$3>=1000 && $3<60000 {print $1; exit}' /etc/passwd)
+uid=$(id -u "$user")
+home=$(getent passwd "$user" | cut -d: -f6)
+
+for _ in $(seq 240); do pgrep -u "$uid" -x plasmashell >/dev/null && break; sleep 5; done
+sleep 45
+asuser() { runuser -u "$user" -- env XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" "$@"; }
+{
+    echo "MAGIC-REPORT-BEGIN"
+    echo "== signed in: $(pgrep -u "$uid" -x plasmashell >/dev/null && echo yes || echo NO)"
+    echo "== display manager: $(readlink -f /etc/systemd/system/display-manager.service)"
+    echo "== packages"; rpm -q plasma-workspace sddm plasmalogin python3-pyside6 plymouth plymouth-plugin-script plasma-discover plasma-discover-flatpak 2>&1
+    echo "== plymouth theme: $(plymouth-set-default-theme 2>&1)"
+    echo "== cmdline: $(cat /proc/cmdline)"
+    echo "== effective settings (as $user)"
+    for k in "kdeglobals General ColorScheme" "kdeglobals General MagicAccent" "kdeglobals KDE LookAndFeelPackage" \
+             "kdeglobals General font" "kdeglobals Icons Theme" "ksplashrc KSplash Theme" "kscreenlockerrc Greeter WallpaperPlugin" \
+             "kdeglobals Colors:Window BackgroundNormal" "kdeglobals Colors:Selection BackgroundNormal" "kxkbrc Layout LayoutList" "plasma-localerc Formats LANG"; do
+        set -- $k; echo "$1 [$2] $3 = $(asuser kreadconfig6 --file "$1" --group "$2" --key "$3")"
+    done
+    echo "== $home/.config"; ls "$home/.config"
+    echo "== appletsrc"; sed -n '1,140p' "$home/.config/plasma-org.kde.plasma.desktop-appletsrc" 2>&1
+    echo "== flatpaks"; flatpak list --system --app --columns=application 2>&1
+    echo "== failed units"; systemctl --failed --no-legend 2>&1
+    echo "== user session warnings"
+    journalctl -b --no-pager -o cat _UID="$uid" -p warning 2>/dev/null | grep -viE "kf.kio|qt.qpa.wayland: Wayland does not support|Could not find" | tail -60
+    echo "== plasmashell"; journalctl -b --no-pager -o cat _UID="$uid" 2>/dev/null | grep -iE "plasmashell|layout|js:|desktop-layout" | tail -40
+    echo "== magic settings check"; QT_QPA_PLATFORM=offscreen timeout 60 /usr/bin/magic-settings --check 2>&1 | tail -20; echo "exit=$?"
+    echo "MAGIC-REPORT-END"
+} > "$out" 2>&1

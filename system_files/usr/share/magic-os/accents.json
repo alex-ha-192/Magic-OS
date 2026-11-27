@@ -1,0 +1,49 @@
+{
+  "default": "lime",
+  "order": [
+    "lime",
+    "ember",
+    "magenta",
+    "teal",
+    "blue",
+    "violet"
+  ],
+  "accents": {
+    "lime": {
+      "name": "Lime",
+      "fill": "#4d7c0f",
+      "text": "#bef264",
+      "wallpaper": "#26390d"
+    },
+    "ember": {
+      "name": "Ember",
+      "fill": "#c2410c",
+      "text": "#ff8a4c",
+      "wallpaper": "#4b2412"
+    },
+    "magenta": {
+      "name": "Magenta",
+      "fill": "#c4125f",
+      "text": "#ff5fa2",
+      "wallpaper": "#4a1236"
+    },
+    "teal": {
+      "name": "Teal",
+      "fill": "#0f766e",
+      "text": "#5eead4",
+      "wallpaper": "#0c3b3a"
+    },
+    "blue": {
+      "name": "Blue",
+      "fill": "#1d5fc4",
+      "text": "#7db3ff",
+      "wallpaper": "#10305f"
+    },
+    "violet": {
+      "name": "Violet",
+      "fill": "#6d3fc0",
+      "text": "#b79cff",
+      "wallpaper": "#2d1a58"
+    }
+  }
+}

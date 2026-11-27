@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Magic start-up screen: charcoal, "magic", a moving bar. When the disk needs
+// unlocking it asks for the start-up password (or recovery key) in plain words.
+Window.SetBackgroundTopColor(0.071, 0.063, 0.059);
+Window.SetBackgroundBottomColor(0.071, 0.063, 0.059);
+
+W = Window.GetWidth();
+H = Window.GetHeight();
+cx = Window.GetX() + W / 2;
+cy = Window.GetY() + H / 2;
+
+word = Image.Text("magic", 1, 1, 1, 1, "Open Sans Light 44");
+word_s = Sprite(word);
+word_s.SetPosition(cx - word.GetWidth() / 2, cy - 110, 2);
+
+track_w = 320;
+track_s = Sprite(Image("track.png").Scale(track_w, 4));
+track_s.SetPosition(cx - track_w / 2, cy - 10, 1);
+seg_w = 80;
+seg_s = Sprite(Image("seg.png").Scale(seg_w, 4));
+seg_s.SetZ(2);
+
+asking = 0;
+t = 0;
+fun refresh() {
+    t++;
+    if (asking) {
+        seg_s.SetOpacity(0);
+        track_s.SetOpacity(0);
+        return;
+    }
+    seg_s.SetOpacity(1);
+    track_s.SetOpacity(1);
+    pos = (t * 3) % (track_w + seg_w) - seg_w;
+    x = pos;
+    w = seg_w;
+    if (x < 0) { w = seg_w + x; x = 0; }
+    if (x + w > track_w) { w = track_w - x; }
+    if (w < 1) { w = 1; }
+    seg_s.SetImage(Image("seg.png").Scale(w, 4));
+    seg_s.SetPosition(cx - track_w / 2 + x, cy - 10, 2);
+}
+Plymouth.SetRefreshFunction(refresh);
+
+// ---- start-up password -------------------------------------------------
+box_w = 360;
+box_h = 44;
+box_s = Sprite(Image("field.png").Scale(box_w, box_h));
+box_s.SetPosition(cx - box_w / 2, cy, 3);
+box_s.SetOpacity(0);
+line_s = Sprite(Image("seg.png").Scale(box_w, 2));
+line_s.SetPosition(cx - box_w / 2, cy + box_h - 2, 4);
+line_s.SetOpacity(0);
+title_s = Sprite();
+hint_s = Sprite();
+dots_s = Sprite();
+
+fun show_password(prompt, bullets) {
+    asking = 1;
+    title = Image.Text("type your start-up password", 1, 1, 1, 1, "Open Sans 18");
+    title_s.SetImage(title);
+    title_s.SetPosition(cx - title.GetWidth() / 2, cy - 46, 4);
+    title_s.SetOpacity(1);
+    hint = Image.Text("or your recovery key, if you've been asked for it", 0.71, 0.68, 0.67, 1, "Open Sans 12");
+    hint_s.SetImage(hint);
+    hint_s.SetPosition(cx - hint.GetWidth() / 2, cy + box_h + 16, 4);
+    hint_s.SetOpacity(1);
+    box_s.SetOpacity(1);
+    line_s.SetOpacity(1);
+    s = "";
+    i = 0;
+    while (i < bullets && i < 40) { s = s + "*"; i++; }
+    if (s == "") { dots_s.SetOpacity(0); }
+    else {
+        dots = Image.Text(s, 1, 1, 1, 1, "Open Sans 18");
+        dots_s.SetImage(dots);
+        dots_s.SetPosition(cx - box_w / 2 + 14, cy + (box_h - dots.GetHeight()) / 2, 5);
+        dots_s.SetOpacity(1);
+    }
+}
+fun show_normal() {
+    asking = 0;
+    title_s.SetOpacity(0);
+    hint_s.SetOpacity(0);
+    box_s.SetOpacity(0);
+    line_s.SetOpacity(0);
+    dots_s.SetOpacity(0);
+}
+Plymouth.SetDisplayPasswordFunction(show_password);
+Plymouth.SetDisplayNormalFunction(show_normal);
+
+msg_s = Sprite();
+fun message_cb(text) {
+    m = Image.Text(text, 0.81, 0.79, 0.77, 1, "Open Sans 12");
+    msg_s.SetImage(m);
+    msg_s.SetPosition(cx - m.GetWidth() / 2, H - 80, 2);
+}
+Plymouth.SetMessageFunction(message_cb);

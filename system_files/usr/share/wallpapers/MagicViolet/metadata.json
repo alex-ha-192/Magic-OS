@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "Magic OS"
+      }
+    ],
+    "Id": "MagicViolet",
+    "License": "CC-BY-SA-4.0",
+    "Name": "Magic Violet"
+  }
+}
