@@ -17,7 +17,7 @@ import sys
 
 HOME = os.path.expanduser("~")
 USAGE = os.path.join(HOME, ".local/share/magic-os/start-usage.json")
-CACHE = os.path.join(HOME, ".cache/magic-os/start-icons")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.join(HOME, ".cache"), "magic-os/start-icons")
 ACCENTS = "/usr/share/magic-os/accents.json"
 ICON_PATHS = {   # line icons from the mockups (24x24)
     "internet": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",
@@ -121,9 +121,18 @@ def accent():
     return key, a["fill"], a["text"]
 
 
+def cache_dir():
+    for d in (CACHE, os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", f"magic-start-{os.getuid()}")):
+        try:
+            os.makedirs(d, exist_ok=True)
+            return d
+        except OSError:
+            continue
+    return "/tmp"
+
+
 def icon_file(name, colour):
-    os.makedirs(CACHE, exist_ok=True)
-    f = os.path.join(CACHE, f"{name}-{colour.lstrip('#')}.svg")
+    f = os.path.join(cache_dir(), f"{name}-{colour.lstrip('#')}.svg")
     if not os.path.exists(f):
         with open(f, "w") as fh:
             fh.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" '
@@ -193,8 +202,11 @@ def remember(path):
         return
     use = usage()
     use[did] = use.get(did, 0) + 1
-    os.makedirs(os.path.dirname(USAGE), exist_ok=True)
-    json.dump(use, open(USAGE, "w"))
+    try:
+        os.makedirs(os.path.dirname(USAGE), exist_ok=True)
+        json.dump(use, open(USAGE, "w"))
+    except OSError:
+        pass
 
 
 def cmd_launch(path):
