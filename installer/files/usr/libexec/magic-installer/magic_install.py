@@ -26,6 +26,7 @@ LOG_PATH = "/var/log/magic-installer.log"
 RUN_DIR = "/run/magic-installer"
 TOP = "/mnt/magic-top"        # btrfs top level (holds the root subvolume + a temporary cache)
 TARGET = "/mnt/magic-target"  # the new system's root, as bootc sees it
+HOST_STORAGE = "/var/lib/containers/storage"
 DEFAULT_IMAGE = "ghcr.io/alex-ha-192/magic-os:latest"
 ESP_TYPE = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
 MSR_TYPE = "e3c9e316-0b5c-4db8-817d-f92df00215ae"
@@ -313,7 +314,8 @@ def _write_secret(name, value):
 
 
 def _cleanup_mounts():
-    for mp in (TARGET + "/boot/efi", TARGET + "/boot", TARGET, TOP, "/var/lib/flatpak"):
+    run(["podman", "rm", "-af"], check=False, quiet=True)
+    for mp in (HOST_STORAGE, TARGET + "/boot/efi", TARGET + "/boot", TARGET, TOP, "/var/lib/flatpak"):
         run(["umount", "-R", mp], check=False, quiet=True)
     if os.path.exists("/dev/mapper/magicroot"):
         run(["cryptsetup", "close", "magicroot"], check=False, quiet=True)
@@ -472,10 +474,15 @@ def _image_download_size(image, authargs=()):
 def download_and_install(cfg, prog, kargs):
     image = cfg.get("image", DEFAULT_IMAGE)
     target_ref = cfg.get("target_imgref", DEFAULT_IMAGE)
+    # The image is big, and the installer runs from memory, so keep container
+    # storage on the new disk. bootc looks the image up through the host's
+    # default storage, so bind-mount the cache there.
     storage = TOP + "/install-cache/storage"
     os.makedirs(storage, exist_ok=True)
     os.makedirs(TOP + "/install-cache/tmp", exist_ok=True)
-    podman = ["podman", "--root", storage, "--runroot", RUN_DIR + "/podman"]
+    os.makedirs(HOST_STORAGE, exist_ok=True)
+    run(["mount", "--bind", storage, HOST_STORAGE])
+    podman = ["podman"]
 
     prog.set("Downloading Magic", 18)
     authargs = _authfile(cfg)
@@ -507,7 +514,7 @@ def download_and_install(cfg, prog, kargs):
     prog.set("Installing Magic", 60)
     cmd = podman + ["run", "--rm", "--privileged", "--pid=host",
                     "--security-opt", "label=type:unconfined_t",
-                    "-v", "/dev:/dev", "-v", f"{storage}:/var/lib/containers/storage",
+                    "-v", "/dev:/dev", "-v", "/var/lib/containers:/var/lib/containers",
                     # Inside the image /mnt is a symlink, so mount the target at /target.
                     "-v", f"{TARGET}:/target", "-v", f"{TOP}/install-cache/tmp:/var/tmp",
                     image, "bootc", "install", "to-filesystem",
@@ -636,6 +643,7 @@ def install(cfg, progress_cb=None):
         prog.set("Finishing", 96)
         write_first_boot(cfg, var_dir)
         setup_boot_menu(cfg, info, esp)
+        run(["umount", "-R", HOST_STORAGE], check=False)
         shutil.rmtree(TOP + "/install-cache", ignore_errors=True)
         run(["btrfs", "subvolume", "delete", TOP + "/install-cache"], check=False)
         run(["fstrim", "-v", TARGET], check=False)
